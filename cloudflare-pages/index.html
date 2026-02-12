@@ -514,8 +514,13 @@
             document.getElementById('user-avatar').src = userData.picture || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(userData.name || 'User') + '&background=667eea&color=fff';
 
             // Load the Apps Script webapp in iframe
+            // 📧 Pass user identity via URL parameters for auto-fill
             var frame = document.getElementById('dashboard-frame');
-            frame.src = CONFIG.WEBAPP_URL;
+            var iframeUrl = CONFIG.WEBAPP_URL
+                + '?userEmail=' + encodeURIComponent(userData.email || '')
+                + '&userName=' + encodeURIComponent(userData.name || '');
+            frame.src = iframeUrl;
+            console.log('🔗 Loading iframe with user params:', userData.email);
         }
 
         // =============================================
@@ -730,6 +735,57 @@
             }
             showLoginView();
         }
+        // =============================================
+        // 📧 POSTMESSAGE BRIDGE: Share session with iframe
+        // Secure cross-origin communication for auto email/agent
+        // =============================================
+        window.addEventListener('message', function (event) {
+            // Security: Only respond to requests from Apps Script domains
+            var allowedOrigins = [
+                'https://script.google.com',
+                'https://script.googleusercontent.com'
+            ];
+
+            // Allow any Google Apps Script origin (they use dynamic subdomains)
+            var isAllowed = allowedOrigins.some(function (origin) {
+                return event.origin.startsWith(origin) || event.origin.indexOf('googleusercontent.com') !== -1;
+            });
+
+            if (!isAllowed) {
+                console.log('⚠️ postMessage from untrusted origin:', event.origin);
+                return;
+            }
+
+            // Handle email request from iframe
+            if (event.data && event.data.type === 'REQUEST_USER_SESSION') {
+                console.log('📧 Iframe requested user session');
+
+                var session = localStorage.getItem(CONFIG.SESSION_KEY);
+                var responseData = { type: 'USER_SESSION_RESPONSE', success: false };
+
+                if (session) {
+                    try {
+                        var data = JSON.parse(session);
+                        responseData = {
+                            type: 'USER_SESSION_RESPONSE',
+                            success: true,
+                            email: data.email || '',
+                            name: data.name || '',
+                            picture: data.picture || ''
+                        };
+                        console.log('✅ Sending session to iframe:', data.email);
+                    } catch (e) {
+                        console.error('❌ Failed to parse session:', e);
+                    }
+                }
+
+                // Send response back to the iframe
+                var frame = document.getElementById('dashboard-frame');
+                if (frame && frame.contentWindow) {
+                    frame.contentWindow.postMessage(responseData, '*');
+                }
+            }
+        });
     </script>
 </body>
 
