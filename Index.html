@@ -14,26 +14,8 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-
-    <!-- 🚀 Performance: Font Awesome with preload -->
-    <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" as="style"
-        onload="this.onload=null;this.rel='stylesheet'">
-    <noscript>
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    </noscript>
-
-    <!-- 🚀 Performance: Chart.js lazy loaded when needed -->
-    <script>
-        // Lazy load Chart.js only when analytics view is accessed
-        var chartJsLoaded = false;
-        function loadChartJs(callback) {
-            if (chartJsLoaded) { if (callback) callback(); return; }
-            var script = document.createElement('script');
-            script.src = 'https://cdn.jsdelivr.net/npm/chart.js';
-            script.onload = function () { chartJsLoaded = true; if (callback) callback(); };
-            document.head.appendChild(script);
-        }
-    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <style>
         /* ==========================================
@@ -420,6 +402,7 @@
                 animation-duration: 0.01ms !important;
                 animation-iteration-count: 1 !important;
                 transition-duration: 0.01ms !important;
+                scroll-behavior: auto !important;
             }
 
             .skeleton {
@@ -445,6 +428,11 @@
         /* High Contrast Mode Support */
         @media (prefers-contrast: high) {
 
+            :root {
+                --text-sec: #1E293B;
+                --border: #000000;
+            }
+
             .btn,
             .badge,
             .pill {
@@ -452,7 +440,7 @@
             }
 
             :focus-visible {
-                outline: 3px solid currentColor;
+                outline: 4px solid currentColor;
                 outline-offset: 2px;
             }
         }
@@ -705,56 +693,6 @@
             box-shadow: 0 0 0 4px var(--primary-focus) !important;
         }
 
-        /* Skip to Main Content Link (Accessibility) */
-        .skip-link {
-            position: absolute;
-            top: -100px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: var(--primary);
-            color: white;
-            padding: 12px 24px;
-            border-radius: var(--radius);
-            z-index: 10000;
-            font-weight: 700;
-            text-decoration: none;
-            transition: top 0.3s;
-        }
-
-        .skip-link:focus {
-            top: 10px;
-        }
-
-        /* High Contrast Mode Support */
-        @media (prefers-contrast: high) {
-            :root {
-                --text-sec: #1E293B;
-                --border: #000000;
-            }
-
-            *:focus-visible {
-                outline-width: 4px !important;
-            }
-
-            .btn,
-            .pill,
-            .badge {
-                border-width: 2px !important;
-            }
-        }
-
-        /* Reduced Motion Support */
-        @media (prefers-reduced-motion: reduce) {
-
-            *,
-            *::before,
-            *::after {
-                animation-duration: 0.01ms !important;
-                animation-iteration-count: 1 !important;
-                transition-duration: 0.01ms !important;
-                scroll-behavior: auto !important;
-            }
-        }
 
         * {
             box-sizing: border-box;
@@ -1401,7 +1339,8 @@
 
         .kpi-card.active {
             transform: scale(1.02);
-            ring: 2px solid var(--primary);
+            outline: 2px solid var(--primary);
+            outline-offset: 2px;
         }
 
         .kpi-head {
@@ -2060,6 +1999,11 @@
             cursor: pointer;
             transition: 0.2s;
             margin: 0 2px;
+            min-height: 44px;
+            min-width: 44px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
         }
 
         .action-btn:hover {
@@ -2150,6 +2094,38 @@
                 transform: translateY(0);
                 opacity: 1;
             }
+        }
+
+        /* Modal exit animation for smooth close */
+        @keyframes modalSlideOut {
+            from {
+                transform: translateY(0);
+                opacity: 1;
+            }
+
+            to {
+                transform: translateY(20px);
+                opacity: 0;
+            }
+        }
+
+        @keyframes overlayFadeOut {
+            from {
+                opacity: 1;
+            }
+
+            to {
+                opacity: 0;
+            }
+        }
+
+        .modal-overlay.closing {
+            animation: overlayFadeOut 0.25s var(--ease-accelerate) forwards;
+            pointer-events: none;
+        }
+
+        .modal-overlay.closing .modal {
+            animation: modalSlideOut 0.2s var(--ease-accelerate) forwards;
         }
 
         .modal-header {
@@ -2250,18 +2226,6 @@
             position: relative;
         }
 
-        /* 🔐 ACCESSIBILITY: Screen Reader Only */
-        .sr-only {
-            position: absolute;
-            width: 1px;
-            height: 1px;
-            padding: 0;
-            margin: -1px;
-            overflow: hidden;
-            clip: rect(0, 0, 0, 0);
-            white-space: nowrap;
-            border: 0;
-        }
 
         /* LOADING SPINNER (Enhanced) */
         .loading-overlay {
@@ -2340,6 +2304,138 @@
             width: 80%;
         }
 
+
+        /* ==========================================
+           🔄 VIEW TRANSITIONS API v1.0
+           Smooth Page/Tab Switching with Animations
+           ========================================== */
+
+        /* Enable View Transitions API */
+        @view-transition {
+            navigation: auto;
+        }
+
+        /* Default View Transition Animations */
+        ::view-transition-old(root) {
+            animation: fadeSlideOut 250ms var(--ease-accelerate) forwards;
+        }
+
+        ::view-transition-new(root) {
+            animation: fadeSlideIn 300ms var(--ease-decelerate) forwards;
+        }
+
+        /* Custom View Transitions for Content Areas */
+        [id^="view-"] {
+            view-transition-name: view-content;
+        }
+
+        ::view-transition-old(view-content) {
+            animation: viewSlideOutLeft 250ms var(--ease-accelerate) forwards;
+        }
+
+        ::view-transition-new(view-content) {
+            animation: viewSlideInRight 300ms var(--ease-decelerate) forwards;
+        }
+
+        /* Sidebar stays stable during transitions */
+        .sidebar {
+            view-transition-name: sidebar;
+        }
+
+        ::view-transition-old(sidebar),
+        ::view-transition-new(sidebar) {
+            animation: none;
+            mix-blend-mode: normal;
+        }
+
+        /* Header stays stable */
+        .header {
+            view-transition-name: header;
+        }
+
+        ::view-transition-old(header),
+        ::view-transition-new(header) {
+            animation: none;
+        }
+
+        /* View Transition Keyframes */
+        @keyframes fadeSlideOut {
+            from {
+                opacity: 1;
+                transform: translateY(0);
+            }
+
+            to {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+        }
+
+        @keyframes fadeSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes viewSlideOutLeft {
+            from {
+                opacity: 1;
+                transform: translateX(0) scale(1);
+            }
+
+            to {
+                opacity: 0;
+                transform: translateX(-20px) scale(0.98);
+            }
+        }
+
+        @keyframes viewSlideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(20px) scale(0.98);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateX(0) scale(1);
+            }
+        }
+
+        /* Reduced motion preference support */
+        @media (prefers-reduced-motion: reduce) {
+
+            ::view-transition-old(root),
+            ::view-transition-new(root),
+            ::view-transition-old(view-content),
+            ::view-transition-new(view-content) {
+                animation-duration: 0.01ms !important;
+            }
+        }
+
+        /* Fallback smooth transitions for unsupported browsers */
+        @supports not (view-transition-name: test) {
+            [id^="view-"] {
+                transition: opacity var(--duration-moderate) var(--ease-emphasized),
+                    transform var(--duration-moderate) var(--ease-emphasized);
+            }
+
+            [id^="view-"].hidden {
+                opacity: 0;
+                transform: translateY(10px);
+                pointer-events: none;
+            }
+
+            [id^="view-"]:not(.hidden) {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
 
         /* ==========================================
            🎯 PREMIUM MICRO-INTERACTIONS v2.0
@@ -4140,6 +4236,210 @@
                 order: -1;
             }
         }
+
+        /* ============================================
+   PHONE NUMBER DISPLAY STYLES
+   ============================================ */
+
+        .phone-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            color: #667eea;
+            font-weight: 600;
+            text-decoration: none;
+            padding: 6px 10px;
+            background: #EEF2FF;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+            font-size: 12px;
+            font-family: 'SF Mono', Monaco, 'Courier New', monospace;
+        }
+
+        .phone-link:hover {
+            background: #667eea;
+            color: white;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+
+        .phone-link:active {
+            transform: translateY(0);
+        }
+
+        .phone-link i {
+            font-size: 11px;
+        }
+
+        /* Mobile phone CTA */
+        .mobile-phone-cta {
+            animation: phoneGlow 2s ease-in-out infinite;
+        }
+
+        @keyframes phoneGlow {
+
+            0%,
+            100% {
+                box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+            }
+
+            50% {
+                box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5), 0 0 0 4px rgba(102, 126, 234, 0.1);
+            }
+        }
+
+        .mobile-phone-cta:active {
+            transform: scale(0.98);
+        }
+
+        /* Agent card phone preview */
+        .ac-phone-preview {
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* ⚡ Extracted inline styles (Fix 7) — reduces HTML bloat per row */
+        .phone-link {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: #667eea;
+            font-weight: 600;
+            text-decoration: none;
+            padding: 6px 10px;
+            background: #EEF2FF;
+            border-radius: 6px;
+            transition: all 0.2s;
+            font-size: 12px;
+        }
+
+        .phone-link:hover {
+            background: #667eea;
+            color: white;
+        }
+
+        .phone-link i {
+            font-size: 11px;
+        }
+
+        .phone-link-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .reason-cell {
+            max-width: 350px;
+            font-size: 11px;
+            color: #475569;
+        }
+
+        .reason-preview {
+            max-height: 80px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            line-height: 1.5;
+            padding: 4px 8px;
+            background: #F8FAFC;
+            border-radius: 6px;
+            border-left: 3px solid #CBD5E1;
+        }
+
+        .text-muted {
+            color: #CBD5E1;
+        }
+
+        .text-muted-italic {
+            color: #CBD5E1;
+            font-style: italic;
+        }
+
+        .mobile-phone-cta {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 14px 20px;
+            border-radius: 12px;
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 15px;
+            margin: 12px 0;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+            transition: all 0.3s;
+        }
+
+        .mobile-phone-cta:hover {
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
+            transform: translateY(-1px);
+        }
+
+        .mobile-phone-cta i:first-child {
+            font-size: 16px;
+        }
+
+        .mobile-phone-cta i:last-child {
+            font-size: 12px;
+            margin-left: auto;
+        }
+
+        /* ♻️ Reusable Empty State Component (S5) */
+        .empty-state {
+            text-align: center;
+            padding: 48px 24px;
+            color: var(--text-sec);
+        }
+
+        .empty-state-icon {
+            font-size: 48px;
+            opacity: 0.35;
+            margin-bottom: 16px;
+            color: var(--primary);
+        }
+
+        .empty-state-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--text-main);
+            margin: 0 0 8px;
+        }
+
+        .empty-state-desc {
+            font-size: 13px;
+            color: var(--text-sec);
+            margin: 0;
+            max-width: 320px;
+            margin-inline: auto;
+            line-height: 1.6;
+        }
+
+        /* ⚡ Fix 9: GPU layer promotion for animated elements */
+        .reason-modal-overlay,
+        .create-modal-overlay,
+        .comparison-modal-overlay {
+            will-change: opacity;
+        }
+
+        .sidebar {
+            will-change: transform;
+        }
+
+        .mobile-ticket-card {
+            will-change: transform, opacity;
+        }
     </style>
 </head>
 
@@ -4164,16 +4464,18 @@
 
     <!-- STATUS + REASON MODAL -->
     <div class="modal-overlay" id="reason-modal" data-current-ticket="">
-        <div class="modal" style="max-width: 650px;">
+        <div class="modal" style="max-width: 650px;" role="dialog" aria-modal="true"
+            aria-labelledby="reason-modal-title">
             <div class="modal-header">
-                <div class="modal-title">🎯 Update Ticket Status & Reason</div>
-                <span class="modal-close" onclick="closeReasonModal()">&times;</span>
+                <div class="modal-title" id="reason-modal-title">🎯 Update Ticket Status & Reason</div>
+                <button class="modal-close" onclick="closeReasonModal()" aria-label="Close update ticket dialog"
+                    type="button">&times;</button>
             </div>
             <div class="modal-body">
                 <div class="ticket-info" id="modal-ticket-info"></div>
 
                 <div style="margin-bottom: 20px;">
-                    <label class="modal-label">📊 Update Status</label>
+                    <label class="modal-label" for="modal-status-select">📊 Update Status</label>
                     <select class="modal-input" id="modal-status-select"
                         style="min-height: auto; height: 48px; font-size: 15px; font-weight: 600; cursor: pointer;"
                         onchange="updateReasonRequirement()">
@@ -4186,7 +4488,7 @@
                 </div>
 
                 <div style="margin-bottom: 16px;">
-                    <label class="modal-label">📝 Add Reason / Follow-up Notes</label>
+                    <label class="modal-label" for="reason-input">📝 Add Reason / Follow-up Notes</label>
                     <textarea class="modal-input" id="reason-input"
                         placeholder="Describe the current status, action taken, or reason for this update...&#10;&#10;Examples:&#10;• Customer not available, will retry tomorrow&#10;• Issue resolved, printer configured successfully&#10;• Hardware replacement required&#10;• Waiting for customer confirmation"
                         style="min-height: 120px;"></textarea>
@@ -4215,7 +4517,7 @@
                 <button class="btn" onclick="closeReasonModal()">
                     <i class="fas fa-times"></i> Cancel
                 </button>
-                <button class="btn btn-primary" onclick="submitStatusAndReason()">
+                <button class="btn btn-primary" id="btn-submit-status" onclick="submitStatusAndReason()">
                     <i class="fas fa-save"></i> Update Status & Save Reason
                 </button>
             </div>
@@ -4224,12 +4526,14 @@
 
     <!-- ⚔️ HEAD-TO-HEAD COMPARISON MODAL -->
     <div class="modal-overlay" id="comparison-modal">
-        <div class="modal comparison-modal-content">
+        <div class="modal comparison-modal-content" role="dialog" aria-modal="true"
+            aria-labelledby="comparison-modal-title">
             <div class="modal-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
-                <div class="modal-title" style="color: white;">
+                <div class="modal-title" id="comparison-modal-title" style="color: white;">
                     <i class="fas fa-balance-scale"></i> Head-to-Head Comparison
                 </div>
-                <span class="modal-close" onclick="closeComparisonModal()" style="color: white;">&times;</span>
+                <button class="modal-close" onclick="closeComparisonModal()" style="color: white;"
+                    aria-label="Close comparison dialog" type="button">&times;</button>
             </div>
             <div class="modal-body">
                 <!-- Agent Selector Header -->
@@ -4258,91 +4562,82 @@
         </div>
     </div>
 
-    <!-- ♿ ACCESSIBILITY: Live Region for Screen Reader Announcements -->
-    <div id="aria-live-region" role="status" aria-live="polite" aria-atomic="true" class="sr-only"></div>
-    <div id="aria-alert-region" role="alert" aria-live="assertive" aria-atomic="true" class="sr-only"></div>
-
     <!-- CREATE TICKET MODAL -->
     <div class="modal-overlay" id="create-ticket-modal" role="dialog" aria-modal="true"
         aria-labelledby="create-ticket-title">
         <div class="modal" style="max-width: 750px;">
-            <!-- MODAL HEADER -->
             <div class="modal-header">
-                <div class="modal-title" id="create-ticket-title">
-                    🎫 Create New Support Ticket
-                </div>
-                <button class="modal-close" onclick="closeCreateModal()" aria-label="Close modal" type="button">
-                    &times;
-                </button>
+                <div class="modal-title" id="create-ticket-title">🎫 Create New Support Ticket</div>
+                <button class="modal-close" onclick="closeCreateModal()" aria-label="Close create ticket dialog"
+                    type="button">&times;</button>
             </div>
-
-            <!-- MODAL BODY -->
             <div class="modal-body">
 
-                <!-- Row 1: IT Person (Agent) - Full Width -->
-                <div style="margin-bottom: 16px;">
-                    <label class="modal-label" for="new-agent">
-                        👤 IT Person (Agent) <span style="color:#DC2626;">*</span>
-                    </label>
-                    <select class="modal-input" id="new-agent" style="min-height: auto; height: 42px;" required
-                        aria-required="true" aria-label="Select IT support agent">
-                        <option value="">-- Select Agent --</option>
-                        <option value="Manjeet">Manjeet</option>
-                        <option value="Suraj">Suraj</option>
-                        <option value="Veer Bahadur">Veer Bahadur</option>
-                    </select>
-                </div>
-
-                <!-- Row 2: Requested By & MID -->
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
                     <div>
-                        <label class="modal-label" for="new-requested">
-                            🙋 Requested By
-                        </label>
+                        <label class="modal-label" for="new-email">📧 Email Address <span
+                                style="color:#DC2626;">*</span></label>
+                        <input type="email" class="modal-input" id="new-email" style="min-height: auto; height: 42px;"
+                            placeholder="your.email@billfree.in" required>
+                    </div>
+
+                    <div>
+                        <label class="modal-label" for="new-agent">👤 IT Person (Agent) <span
+                                style="color:#DC2626;">*</span></label>
+                        <select class="modal-input" id="new-agent" style="min-height: auto; height: 42px;" required>
+                            <option value="">-- Select Agent --</option>
+                            <option value="Manjeet">Manjeet</option>
+                            <option value="Suraj">Suraj</option>
+                            <option value="Veer Bahadur">Veer Bahadur</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+                    <div>
+                        <label class="modal-label" for="new-requested">🙋 Requested By</label>
                         <input type="text" class="modal-input" id="new-requested"
-                            style="min-height: auto; height: 42px;" placeholder="Customer/Staff Name"
-                            aria-label="Name of person requesting support" maxlength="100">
+                            style="min-height: auto; height: 42px;" placeholder="Customer/Staff Name">
                     </div>
 
                     <div>
-                        <label class="modal-label" for="new-mid">
-                            🏪 MID (Merchant ID)
-                        </label>
+                        <label class="modal-label" for="new-mid">🏪 MID (Merchant ID)</label>
                         <input type="text" class="modal-input" id="new-mid" style="min-height: auto; height: 42px;"
-                            placeholder="e.g. 12345" aria-label="Merchant identification number" pattern="[0-9]*"
-                            maxlength="20">
+                            placeholder="e.g. 12345">
                     </div>
                 </div>
 
-                <!-- Row 3: Business Name & POS -->
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
                     <div>
-                        <label class="modal-label" for="new-business">
-                            🏢 Business Name <span style="color:#DC2626;">*</span>
-                        </label>
+                        <label class="modal-label" for="new-business">🏢 Business Name <span
+                                style="color:#DC2626;">*</span></label>
                         <input type="text" class="modal-input" id="new-business" style="min-height: auto; height: 42px;"
-                            placeholder="Business/Store Name" required aria-required="true"
-                            aria-label="Business or store name" maxlength="150">
+                            placeholder="Business/Store Name" required>
                     </div>
 
                     <div>
-                        <label class="modal-label" for="new-pos">
-                            💻 POS
-                        </label>
-                        <input type="text" class="modal-input" id="new-pos" style="min-height: auto; height: 42px;"
-                            placeholder="POS/Device Info" aria-label="Point of sale system information" maxlength="100">
+                        <label class="modal-label" for="new-phone">📞 Phone Number</label>
+                        <input type="tel" class="modal-input" id="new-phone" style="min-height: auto; height: 42px;"
+                            placeholder="10-digit Mobile Number" pattern="[0-9]{10}"
+                            title="Please enter a valid 10-digit mobile number">
                     </div>
                 </div>
 
-                <!-- Row 4: Support Type & Concern -->
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
                     <div>
-                        <label class="modal-label" for="new-support-type">
-                            🛠️ Support Type <span style="color:#DC2626;">*</span>
-                        </label>
+                        <label class="modal-label" for="new-pos">💻 POS</label>
+                        <input type="text" class="modal-input" id="new-pos" style="min-height: auto; height: 42px;"
+                            placeholder="POS/Device Info">
+                    </div>
+                    <div><!-- Spacer --></div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+                    <div>
+                        <label class="modal-label" for="new-support-type">🛠️ Support Type <span
+                                style="color:#DC2626;">*</span></label>
                         <select class="modal-input" id="new-support-type" style="min-height: auto; height: 42px;"
-                            onchange="updateConcernList()" required aria-required="true"
-                            aria-label="Select support category">
+                            onchange="updateConcernList()" required>
                             <option value="">-- Select Support Type --</option>
                             <option value="Customer Support">Customer Support</option>
                             <option value="Floor Support">Floor Support</option>
@@ -4352,11 +4647,9 @@
                     </div>
 
                     <div>
-                        <label class="modal-label" for="new-concern">
-                            ⚠️ Concern Related to <span style="color:#DC2626;">*</span>
-                        </label>
-                        <select class="modal-input" id="new-concern" style="min-height: auto; height: 42px;" required
-                            aria-required="true" aria-label="Select issue type">
+                        <label class="modal-label" for="new-concern">⚠️ Concern Related to <span
+                                style="color:#DC2626;">*</span></label>
+                        <select class="modal-input" id="new-concern" style="min-height: auto; height: 42px;" required>
                             <option value="">-- Select Concern --</option>
                             <option value="New Integration">New Integration</option>
                             <option value="Print issue">Print issue</option>
@@ -4372,13 +4665,9 @@
                     </div>
                 </div>
 
-                <!-- Row 5: Configuration -->
                 <div style="margin-bottom: 16px;">
-                    <label class="modal-label" for="new-config">
-                        ⚙️ Configuration
-                    </label>
-                    <select class="modal-input" id="new-config" style="min-height: auto; height: 42px;"
-                        aria-label="System configuration status">
+                    <label class="modal-label" for="new-config">⚙️ Configuration</label>
+                    <select class="modal-input" id="new-config" style="min-height: auto; height: 42px;">
                         <option value="">-- Select Configuration --</option>
                         <option value="No Config Available">No Config Available</option>
                         <option value="Complete Config">Complete Config</option>
@@ -4386,69 +4675,52 @@
                     </select>
                 </div>
 
-                <!-- Row 6: Remark -->
                 <div style="margin-bottom: 16px;">
-                    <label class="modal-label" for="new-remark">
-                        📝 Remark (if any)
-                    </label>
+                    <label class="modal-label" for="new-remark">Remark if any</label>
                     <textarea class="modal-input" id="new-remark" style="min-height: 90px;"
-                        placeholder="Describe the issue or request in detail..."
-                        aria-label="Additional remarks or details" maxlength="500"></textarea>
+                        placeholder="Describe the issue or request in detail..."></textarea>
                 </div>
 
-                <!-- Row 7: Status -->
                 <div style="margin-bottom: 16px;">
-                    <label class="modal-label" for="new-status">
-                        📊 Status <span style="color:#DC2626;">*</span>
-                    </label>
+                    <label class="modal-label" for="new-status">📊 Status <span style="color:#DC2626;">*</span></label>
                     <select class="modal-input" id="new-status"
-                        style="min-height: auto; height: 42px; font-weight: 600;" onchange="toggleReasonField()"
-                        required aria-required="true" aria-label="Select ticket status">
+                        style="min-height: auto; height: 42px; font-weight: 600;" onchange="toggleReasonField()">
                         <option value="" selected disabled>-- Select Status --</option>
-                        <option value="Completed">Completed ✅</option>
-                        <option value="Not Completed">Not Completed ⏳</option>
-                        <option value="Closed">Closed 🔒</option>
-                        <option value="Can't Do">Can't Do ❌</option>
+                        <option value="Completed">✅ Completed</option>
+                        <option value="Not Completed">⏳ Not Completed</option>
+                        <option value="Closed">🔒 Closed</option>
+                        <option value="Can't Do">❌ Can't Do</option>
                     </select>
                 </div>
 
-                <!-- Row 8: Conditional Reason Field -->
-                <div id="reason-field-container" style="display: none; margin-bottom: 16px;" role="region"
-                    aria-live="polite">
-                    <label class="modal-label" id="reason-field-label" for="new-reason">
-                        📋 Reason / Note <span style="color:#DC2626;">*</span>
-                    </label>
+                <div id="reason-field-container" style="display: none; margin-bottom: 16px;">
+                    <label class="modal-label" id="reason-field-label">📋 Reason / Note <span
+                            style="color:#DC2626;">*</span></label>
                     <textarea class="modal-input" id="new-reason" style="min-height: 80px;"
-                        placeholder="Explain the reason..." aria-label="Reason for status" minlength="10"
-                        maxlength="500"></textarea>
+                        placeholder="Explain the reason..."></textarea>
                     <div id="reason-field-hint" style="font-size: 11px; color: var(--text-sec); margin-top: 6px;">
                         <i class="fas fa-info-circle"></i> Select a status first
                     </div>
                 </div>
 
-                <!-- Information Note -->
-                <div style="font-size: 11px; color: var(--text-sec); padding: 14px; background: #F8FAFC; border-radius: 8px; border: 1px solid var(--border);"
-                    role="note">
+                <div
+                    style="font-size: 11px; color: var(--text-sec); padding: 14px; background: #F8FAFC; border-radius: 8px; border: 1px solid var(--border);">
                     <i class="fas fa-info-circle" style="color: var(--info);"></i>
                     <strong>Note:</strong> Ticket ID will be auto-generated when the ticket is created in the sheet.
                     Fields marked with <span style="color:#DC2626;">*</span> are required.
                 </div>
 
             </div>
-
-            <!-- MODAL FOOTER -->
             <div class="modal-footer">
-                <button class="btn" onclick="closeCreateModal()" type="button" aria-label="Cancel and close">
+                <button class="btn" onclick="closeCreateModal()">
                     <i class="fas fa-times"></i> Cancel
                 </button>
-                <button class="btn btn-primary" onclick="submitNewTicket()" type="button"
-                    aria-label="Create new ticket">
+                <button class="btn btn-primary" id="btn-submit-ticket" onclick="submitNewTicket()">
                     <i class="fas fa-paper-plane"></i> Create Ticket
                 </button>
             </div>
         </div>
     </div>
-
 
     <div id="loader">
         <div class="spinner"></div>
@@ -4470,11 +4742,12 @@
             <div class="nav-label">
                 <i class="fas fa-compass nav-label-icon"></i> Main
             </div>
-            <div class="nav-item active" onclick="nav('dash', this)" tabindex="0" role="button" aria-current="page">
+            <div class="nav-item active" onclick="nav('dash', this)" data-view="dash" tabindex="0" role="button"
+                aria-current="page">
                 <i class="fas fa-home"></i>
                 <span class="nav-item-text">Dashboard</span>
             </div>
-            <div class="nav-item" onclick="nav('team', this)" tabindex="0" role="button">
+            <div class="nav-item" onclick="nav('team', this)" data-view="team" tabindex="0" role="button">
                 <i class="fas fa-trophy"></i>
                 <span class="nav-item-text">Team Performance</span>
             </div>
@@ -4482,11 +4755,11 @@
             <div class="nav-label">
                 <i class="fas fa-database nav-label-icon"></i> Data
             </div>
-            <div class="nav-item" onclick="nav('analytics', this)" tabindex="0" role="button">
+            <div class="nav-item" onclick="nav('analytics', this)" data-view="analytics" tabindex="0" role="button">
                 <i class="fas fa-chart-pie"></i>
                 <span class="nav-item-text">Manager Analytics</span>
             </div>
-            <div class="nav-item" onclick="nav('tickets', this)" tabindex="0" role="button">
+            <div class="nav-item" onclick="nav('tickets', this)" data-view="tickets" tabindex="0" role="button">
                 <i class="fas fa-server"></i>
                 <span class="nav-item-text">Master Database</span>
             </div>
@@ -4494,11 +4767,11 @@
             <div class="nav-label">
                 <i class="fas fa-file-alt nav-label-icon"></i> Reports
             </div>
-            <div class="nav-item" onclick="nav('history', this)" tabindex="0" role="button">
+            <div class="nav-item" onclick="nav('history', this)" data-view="history" tabindex="0" role="button">
                 <i class="fas fa-history"></i>
                 <span class="nav-item-text">Update History</span>
             </div>
-            <div class="nav-item" onclick="nav('reports', this)" tabindex="0" role="button">
+            <div class="nav-item" onclick="nav('reports', this)" data-view="reports" tabindex="0" role="button">
                 <i class="fas fa-file-export"></i>
                 <span class="nav-item-text">Monthly Reports</span>
             </div>
@@ -4518,7 +4791,7 @@
 
     </div>
 
-    <div class="main">
+    <div class="main" id="main-content" role="main" tabindex="-1">
         <div class="header">
             <div class="page-title">
                 <h1>IT Command Center</h1>
@@ -4528,23 +4801,22 @@
             <div style="display: flex; gap: 8px;">
                 <!-- 🔔 NOTIFICATION BUTTON -->
                 <button class="btn" onclick="toggleNotificationSettings()" title="Notification Settings"
-                    style="width: 44px; min-height: 44px; padding: 8px;" aria-label="Open notification settings">
-                    <span aria-hidden="true">🔔</span>
+                    style="width: 42px; padding: 8px;">
+                    🔔
                 </button>
 
                 <!-- ⌨️ KEYBOARD SHORTCUTS BUTTON -->
                 <button class="btn" onclick="showKeyboardShortcuts()" title="Keyboard Shortcuts"
-                    style="width: 44px; min-height: 44px; padding: 8px;" aria-label="Show keyboard shortcuts">
-                    <span aria-hidden="true">⌨️</span>
+                    style="width: 42px; padding: 8px;">
+                    ⌨️
                 </button>
 
-                <button class="btn btn-primary" onclick="openCreateModal()"
-                    style="background: #10B981; min-height: 44px;" aria-label="Create new support ticket">
-                    <i class="fas fa-plus-circle" aria-hidden="true"></i> Create Ticket
+                <button class="btn btn-primary" onclick="openCreateModal()" style="background: #10B981;">
+
+                    <i class="fas fa-plus-circle"></i> Create Ticket
                 </button>
-                <button class="btn btn-primary" onclick="fetchData()" style="min-height: 44px;"
-                    aria-label="Refresh ticket data">
-                    <i class="fas fa-sync-alt" aria-hidden="true"></i> Refresh
+                <button class="btn btn-primary" onclick="fetchData()">
+                    <i class="fas fa-sync-alt"></i> Refresh
                 </button>
             </div>
         </div>
@@ -4680,9 +4952,8 @@
             </div>
 
             <!-- MOBILE NAVIGATION TOGGLE -->
-            <button class="mobile-nav-toggle" onclick="toggleMobileNav()" aria-label="Toggle mobile navigation menu"
-                aria-expanded="false" id="mobile-nav-btn">
-                <i class="fas fa-bars" aria-hidden="true"></i>
+            <button class="mobile-nav-toggle" onclick="toggleMobileNav()">
+                <i class="fas fa-bars"></i>
             </button>
 
             <!-- MOBILE OVERLAY -->
@@ -4691,26 +4962,22 @@
             <!-- MOBILE QUICK ACTIONS BAR -->
             <div class="mobile-quick-actions">
                 <div class="mobile-action-grid">
-                    <button class="mobile-action-btn" onclick="openCreateModal()" aria-label="Create new ticket"
-                        style="min-width: 44px; min-height: 44px;">
-                        <i class="fas fa-plus-circle" aria-hidden="true"></i>
+                    <div class="mobile-action-btn" onclick="openCreateModal()">
+                        <i class="fas fa-plus-circle"></i>
                         <span>New</span>
-                    </button>
-                    <button class="mobile-action-btn" onclick="fetchData()" aria-label="Refresh data"
-                        style="min-width: 44px; min-height: 44px;">
-                        <i class="fas fa-sync-alt" aria-hidden="true"></i>
+                    </div>
+                    <div class="mobile-action-btn" onclick="fetchData()">
+                        <i class="fas fa-sync-alt"></i>
                         <span>Refresh</span>
-                    </button>
-                    <button class="mobile-action-btn" onclick="nav('analytics', this)" aria-label="View statistics"
-                        style="min-width: 44px; min-height: 44px;">
-                        <i class="fas fa-chart-pie" aria-hidden="true"></i>
+                    </div>
+                    <div class="mobile-action-btn" onclick="nav('analytics', this)" data-view="analytics">
+                        <i class="fas fa-chart-pie"></i>
                         <span>Stats</span>
-                    </button>
-                    <button class="mobile-action-btn" onclick="nav('tickets', this)" aria-label="View all tickets"
-                        style="min-width: 44px; min-height: 44px;">
-                        <i class="fas fa-database" aria-hidden="true"></i>
+                    </div>
+                    <div class="mobile-action-btn" onclick="nav('tickets', this)" data-view="tickets">
+                        <i class="fas fa-database"></i>
                         <span>All</span>
-                    </button>
+                    </div>
                 </div>
             </div>
 
@@ -4905,6 +5172,7 @@
                                 <th>Business</th>
                                 <th>Concern</th>
                                 <th style="max-width:300px;">Remark</th>
+                                <th>📞 Phone</th>
                                 <th>Status</th>
                                 <th>Age</th>
                             </tr>
@@ -5324,6 +5592,7 @@
          */
         const FRONTEND_CONFIG = Object.freeze({
             VERSION: '9.9.0',
+            DEBUG: false, // ⚡ Fix 7: Set to true for verbose logging
             POLLING_INTERVAL_MS: 15000,
             DEBOUNCE_DELAY_MS: 300,
             TOAST_DURATION_MS: 4000,
@@ -5340,43 +5609,145 @@
          */
         function escapeHtml(text) {
             if (text === null || text === undefined) return '';
-            const div = document.createElement('div');
-            div.textContent = String(text);
-            return div.innerHTML;
+            return String(text)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
         }
 
-        /**
-         * 🔐 ACCESSIBILITY: Focus Trap for Modals
-         * Traps focus within a container for keyboard users
-         */
-        function trapFocus(container) {
-            const focusableElements = container.querySelectorAll(
-                'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-            );
-            const firstFocusable = focusableElements[0];
-            const lastFocusable = focusableElements[focusableElements.length - 1];
+        // ⚡ Memoized escapeHtml for repeated values (agent names, statuses, etc.)
+        const _escCache = new Map();
+        function escapeHtmlCached(str) {
+            if (str === null || str === undefined) return '';
+            const key = String(str);
+            if (_escCache.has(key)) return _escCache.get(key);
+            const escaped = escapeHtml(key);
+            if (_escCache.size < 500) _escCache.set(key, escaped); // Cap cache size
+            return escaped;
+        }
 
-            function handleKeydown(e) {
-                if (e.key !== 'Tab') return;
+        // ⚡ Consolidated "Can't Do" status check (used in 5+ places)
+        function isCantDoStatus(status) {
+            const st = (status || '').toLowerCase();
+            return st.includes("can't") || st.includes('cant');
+        }
 
-                if (e.shiftKey) {
-                    if (document.activeElement === firstFocusable) {
-                        e.preventDefault();
-                        lastFocusable.focus();
-                    }
-                } else {
-                    if (document.activeElement === lastFocusable) {
-                        e.preventDefault();
-                        firstFocusable.focus();
-                    }
+        // ⚡ Debounce utility (Fix 1) — delays fn until delay ms after last call
+        function debounce(fn, delay) {
+            let timer;
+            return function (...args) {
+                clearTimeout(timer);
+                timer = setTimeout(() => fn.apply(this, args), delay);
+            };
+        }
+
+        // ⚡ Throttle utility — limits fn to at most once per limit ms
+        function throttle(fn, limit) {
+            let inThrottle;
+            return function (...args) {
+                if (!inThrottle) {
+                    fn.apply(this, args);
+                    inThrottle = true;
+                    setTimeout(() => inThrottle = false, limit);
+                }
+            };
+        }
+
+        // ⚡ Debounced local search (Fix 3) — avoids re-render on every keystroke
+        const debouncedLocalSearch = debounce(function (value) {
+            searchLocalTable(value);
+        }, 250);
+
+        // ⚡ Centralized status filter (Fix 5) — eliminates 14 duplicated if/else blocks
+        function filterByStatus(data, statusType) {
+            switch (statusType) {
+                case 'Total': return [...data];
+                case 'Completed': return data.filter(t => t.status.toLowerCase() === 'completed');
+                case 'Not Completed': return data.filter(t => {
+                    const s = t.status.toLowerCase();
+                    return s === 'not completed' || s === 'pending' || s === 'in progress';
+                });
+                case 'Closed': return data.filter(t => t.status.toLowerCase() === 'closed');
+                case "Can't Do": return data.filter(t => isCantDoStatus(t.status));
+                case 'Invalid Closed': return data.filter(t => t.invalidClosed);
+                case 'Old Pending': return data.filter(t => {
+                    const s = t.status.toLowerCase();
+                    return t.ageDays >= 7 && s !== 'completed' && s !== 'closed';
+                });
+                default: return [...data];
+            }
+        }
+
+        // ⚡ Centralized status badge resolver (Fix 6) — DRY for table + mobile
+        function getStatusBadge(ticket) {
+            const st = ticket.status.toLowerCase();
+            let badgeClass = 's-pend', iconClass = 'fa-hourglass-half',
+                mobileClass = 'status-pending';
+            if (st === 'completed') {
+                badgeClass = 's-done'; iconClass = 'fa-check-circle'; mobileClass = 'status-completed';
+            } else if (st === 'closed') {
+                badgeClass = ticket.invalidClosed ? 's-invalid' : 's-closed';
+                iconClass = ticket.invalidClosed ? 'fa-exclamation-triangle' : 'fa-lock';
+                mobileClass = ticket.invalidClosed ? 'status-invalid' : 'status-closed';
+            } else if (isCantDoStatus(ticket.status)) {
+                badgeClass = 's-cant'; iconClass = 'fa-times-circle'; mobileClass = 'status-cant';
+            }
+            if (ticket.invalidClosed) {
+                badgeClass = 's-invalid'; iconClass = 'fa-exclamation-triangle'; mobileClass = 'status-invalid';
+            }
+            return { badgeClass, iconClass, mobileClass };
+        }
+
+        // ⚡ Module-scope date parser (Fix 10) — moved out of renderTicketsTablePaginated
+        function getDateFromRow(row) {
+            const dateKeys = ['Date', 'Timestamp', 'date', 'timestamp', 'Created', 'created'];
+            for (const key of dateKeys) {
+                if (row[key]) {
+                    const d = new Date(row[key]);
+                    if (!isNaN(d.getTime())) return d;
                 }
             }
-
-            container.addEventListener('keydown', handleKeydown);
-            firstFocusable?.focus();
-
-            return () => container.removeEventListener('keydown', handleKeydown);
+            return null;
         }
+
+        // ⚡ DRY Chart.js empty-state reset helper
+        function resetChartCanvas(chartId, message) {
+            if (CHARTS[chartId]) CHARTS[chartId].destroy();
+            const canvas = document.getElementById(chartId);
+            if (!canvas) return;
+            const parent = canvas.parentElement;
+            parent.innerHTML = '';
+            const newCanvas = document.createElement('canvas');
+            newCanvas.id = chartId;
+            parent.appendChild(newCanvas);
+            const msg = document.createElement('div');
+            msg.textContent = message || 'No data available';
+            msg.style.cssText = 'text-align:center;padding:40px;color:#94A3B8';
+            parent.appendChild(msg);
+        }
+
+        // ⚡ Smart Chart.js render/update helper (Fix 8)
+        // Uses .update() for smooth transitions when chart type matches; destroys only when type changes
+        function renderOrUpdateChart(chartId, type, chartData, chartOptions) {
+            const canvas = document.getElementById(chartId);
+            if (!canvas) return null;
+
+            // If chart exists with same type, update in-place for smooth animation
+            if (CHARTS[chartId] && CHARTS[chartId].config.type === type) {
+                CHARTS[chartId].data = chartData;
+                if (chartOptions) CHARTS[chartId].options = chartOptions;
+                CHARTS[chartId].update();
+                return CHARTS[chartId];
+            }
+
+            // Otherwise destroy and recreate
+            if (CHARTS[chartId]) CHARTS[chartId].destroy();
+            CHARTS[chartId] = new Chart(canvas, { type, data: chartData, options: chartOptions || {} });
+            return CHARTS[chartId];
+        }
+
 
         /**
          * ✅ CONFIRMATION DIALOG
@@ -5746,6 +6117,10 @@
         }
 
         function showToast(message, type = 'info', duration = 3000) {
+            // Haptic feedback for mobile (consolidated from showPremiumToast)
+            if (typeof hapticFeedback === 'function') {
+                hapticFeedback(type === 'error' ? 'error' : type === 'success' ? 'success' : 'light');
+            }
             const existing = document.getElementById('toast-container');
             if (existing) existing.remove();
 
@@ -5757,14 +6132,18 @@
             };
 
             const icons = {
-                success: '✓',
-                error: '✕',
-                warning: '⚠',
-                info: 'ℹ'
+                success: 'OK',
+                error: 'X',
+                warning: '!',
+                info: 'i'
             };
+            const tone = Object.prototype.hasOwnProperty.call(colors, type) ? type : 'info';
+            const safeMessage = String(message ?? '');
 
             const toast = document.createElement('div');
             toast.id = 'toast-container';
+            toast.setAttribute('role', 'alert');
+            toast.setAttribute('aria-live', 'assertive');
             toast.style.cssText = `
     position: fixed;
     top: 80px;
@@ -5780,23 +6159,27 @@
     gap: 12px;
     font-weight: 600;
     font-size: 14px;
-    border-left: 4px solid ${colors[type]};
+    border-left: 4px solid ${colors[tone]};
     animation: slideInRight 0.3s ease-out;
     max-width: 400px;
   `;
 
-            toast.innerHTML = `
-    <span style="font-size: 20px;">${icons[type]}</span>
-    <span>${message}</span>
-  `;
+            const iconSpan = document.createElement('span');
+            iconSpan.style.fontSize = '20px';
+            iconSpan.setAttribute('aria-hidden', 'true');
+            iconSpan.textContent = icons[tone];
 
+            const messageSpan = document.createElement('span');
+            messageSpan.textContent = safeMessage;
+
+            toast.appendChild(iconSpan);
+            toast.appendChild(messageSpan);
             document.body.appendChild(toast);
 
-            // 🔊 Also announce to screen readers
-            if (type === 'error' || type === 'warning') {
-                announceAlertToScreenReader(message);
+            if (tone === 'error' || tone === 'warning') {
+                announceAlertToScreenReader(safeMessage);
             } else {
-                announceToScreenReader(message);
+                announceToScreenReader(safeMessage);
             }
 
             setTimeout(() => {
@@ -6067,13 +6450,6 @@
             });
         }
 
-        /**
-         * 🔔 Premium toast with haptic and animation
-         */
-        function showPremiumToast(message, type = 'info', duration = 3000) {
-            hapticFeedback(type === 'error' ? 'error' : type === 'success' ? 'success' : 'light');
-            showToast(message, type, duration);
-        }
 
         /**
          * 🎭 Smooth element visibility toggle
@@ -6406,8 +6782,12 @@
         }
 
         function closeAllModals() {
-            const modals = document.querySelectorAll('.modal-overlay');
-            modals.forEach(modal => modal.classList.remove('show'));
+            closeReasonModal();
+            closeCreateModal();
+            closeComparisonModal();
+            if (typeof closeMobileDetailsModal === 'function') {
+                closeMobileDetailsModal();
+            }
 
             const settingsPanel = document.getElementById('notification-settings-panel');
             if (settingsPanel) settingsPanel.remove();
@@ -6517,8 +6897,94 @@
         // ✅ INITIALIZATION WITH VERSION POLLING
         // ==========================================
 
+        // 📧 Server-injected user identity (from doGet URL parameters)
+        // These are populated by Cloudflare Pages → iframe URL → doGet(e) → scriptlet
+        const INJECTED_USER_EMAIL = '<?= injectedUserEmail ?>';
+        const INJECTED_USER_NAME = '<?= injectedUserName ?>';
+
+        let CURRENT_USER_EMAIL = INJECTED_USER_EMAIL || '';
+        let CURRENT_USER_AGENT_NAME = ''; // Resolved from AGENT_DIRECTORY
+
+        console.log('📧 Server-injected identity:', INJECTED_USER_EMAIL, INJECTED_USER_NAME);
+
+        /**
+         * 🔍 Find agent name from email using AGENTS_CACHE
+         */
+        function findAgentNameFromEmail(email) {
+            if (!email || !AGENTS_CACHE) return null;
+            const normalized = email.toLowerCase().trim();
+            const agent = AGENTS_CACHE.find(a =>
+                a.email && a.email.toLowerCase() === normalized
+            );
+            return agent ? agent.name : null;
+        }
+
+        /**
+         * 📧 Get the current user's email address
+         * 
+         * Priority:
+         *   1. Server-injected from URL params (instant, reliable)
+         *   2. Fallback: google.script.run.getCurrentUserEmail()
+         * 
+         * @param {function} onResolved - Callback(email, result)
+         */
+        function requestCurrentUserEmail(onResolved) {
+            const done = typeof onResolved === 'function' ? onResolved : function () { };
+
+            // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+            // 🥇 Primary: Server-injected email (instant)
+            // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+            if (INJECTED_USER_EMAIL) {
+                console.log('✅ Using server-injected email:', INJECTED_USER_EMAIL);
+                CURRENT_USER_EMAIL = INJECTED_USER_EMAIL;
+                done(INJECTED_USER_EMAIL, {
+                    success: true,
+                    email: INJECTED_USER_EMAIL,
+                    name: INJECTED_USER_NAME,
+                    agentName: null,  // Will be resolved from cache in autoSelectAgentByEmail
+                    source: 'server_injected'
+                });
+                return;
+            }
+
+            // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+            // 🥈 Fallback: google.script.run
+            // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+            console.log('⏳ No injected email, trying google.script.run...');
+            try {
+                google.script.run
+                    .withSuccessHandler(response => {
+                        try {
+                            const result = typeof response === 'string' ? JSON.parse(response) : response;
+                            if (result && result.success && result.email) {
+                                CURRENT_USER_EMAIL = result.email;
+                                if (result.agentName) {
+                                    CURRENT_USER_AGENT_NAME = result.agentName;
+                                }
+                                console.log('✅ Got email from backend:', result.email);
+                                done(result.email, result);
+                                return;
+                            }
+                            console.warn('⚠️ Backend returned no email:', result);
+                            done('', result || {});
+                        } catch (e) {
+                            console.error('Failed to parse response:', e);
+                            done('', { success: false, error: String(e) });
+                        }
+                    })
+                    .withFailureHandler(err => {
+                        console.error('❌ getCurrentUserEmail failed:', err);
+                        done('', { success: false, error: String(err) });
+                    })
+                    .getCurrentUserEmail();
+            } catch (e) {
+                console.error('getCurrentUserEmail unavailable:', e);
+                done('', { success: false, error: String(e) });
+            }
+        }
 
         window.onload = function () {
+            setupEventListeners();
             loadNotificationSettings();
             requestNotificationPermission();
 
@@ -6526,9 +6992,26 @@
             initReportSelectors();
 
 
+            // 1. Fetch user identity without blocking boot
+            requestCurrentUserEmail((email) => {
+                CURRENT_USER_EMAIL = email || '';
+                if (CURRENT_USER_EMAIL) {
+                    console.log('✅ Logged in as:', CURRENT_USER_EMAIL);
+                } else {
+                    console.warn('⚠️ User email unavailable. Continuing with limited identity context.');
+                }
+            });
 
+            // 2. Always fetch initial dataset to clear full-screen loader
+            try {
+                fetchData();
+            } catch (e) {
+                console.error('Initial fetchData boot failed:', e);
+                const loader = document.getElementById('loader');
+                if (loader) loader.style.display = 'none';
+                showToast('Unable to initialize live data. Please refresh.', 'error', 5000);
+            }
 
-            renderTicketsTablePaginated(1);
             startVersionPolling();
             setInterval(() => {
                 PAGINATION.cache.clear();
@@ -6541,12 +7024,20 @@
 
 
 
+        // ==========================================
+        // 🛠️ MODAL LOGIC (UPDATES & CREATION)
+        // ==========================================
+
+
+
+
         function setupEventListeners() {
             // ESC key closes modals
             document.addEventListener('keydown', function (e) {
                 if (e.key === 'Escape') {
                     closeReasonModal();
                     closeCreateModal();
+                    closeComparisonModal();
                 }
             });
 
@@ -6565,6 +7056,20 @@
                 });
 
             }
+            const comparisonModal = document.getElementById('comparison-modal');
+            if (comparisonModal) {
+                comparisonModal.addEventListener('click', function (e) {
+                    if (e.target === this) closeComparisonModal();
+                });
+            }
+            document.querySelectorAll('.nav-item[data-view]').forEach(item => {
+                item.addEventListener('keydown', function (e) {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        nav(this.dataset.view, this);
+                    }
+                });
+            });
             // ============================================================
             // KEYBOARD SHORTCUTS FOR STATUS DROPDOWNS
             // ============================================================
@@ -6762,7 +7267,10 @@
         function applyCustomDate() {
             const s = document.getElementById('start-date').valueAsNumber;
             const e = document.getElementById('end-date').valueAsNumber;
-            if (!s || !e) return alert('Select both start and end dates');
+            if (!s || !e) {
+                showToast('Select both start and end dates.', 'warning', 2500);
+                return;
+            }
             CURRENT_FILTER_RANGE = 'custom';
             DATE_DATA = RAW_DATA.filter(t => t.sortDate >= s && t.sortDate < (e + 864e5));
             refreshAll(false);
@@ -6788,7 +7296,7 @@
             // Refresh other views if active
             if (!document.getElementById('view-team').classList.contains('hidden')) renderDetailedTeamReport();
             if (!document.getElementById('view-analytics').classList.contains('hidden')) {
-                setTimeout(() => renderAnalytics(), 100); // ✅ Delay for DOM update
+                renderAnalytics();
             }
         }
 
@@ -6802,7 +7310,7 @@
                 const st = t.status.toLowerCase();
                 if (st === 'completed') s.comp++;
                 else if (st === 'closed') s.closed++;
-                else if (st.includes("can't") || st.includes('cant') || st.includes("can’t")) s.cant++;
+                else if (isCantDoStatus(t.status)) s.cant++;
                 else s.not++;
             });
             ['total', 'comp', 'not', 'closed', 'cant'].forEach(k => {
@@ -6850,7 +7358,7 @@
                     } else {
                         a.invalidClosed++;
                     }
-                } else if (st.includes("can't") || st.includes('cant') || st.includes("can’t")) {
+                } else if (isCantDoStatus(t.status)) {
                     a.cant++;
                 } else {
                     a.not++;
@@ -6862,10 +7370,16 @@
             });
 
             Object.values(agents).forEach(a => {
-                // ✅ UPDATED SCORING: +10 Completed, +0 Valid Closed, -5 Can't, -10 Invalid, -3 Old Pending
+                // ✅ UPDATED SCORING
                 a.score = (a.comp * 10) + (a.validClosed * 0) - (a.cant * 5) - (a.invalidClosed * 10) - (a.pendingOld * 3);
 
                 a.completionRate = a.total ? Math.round((a.comp + a.validClosed) / a.total * 100) : 0;
+
+                // 🔥 ADD THIS - Extract recent tickets with phone numbers
+                a.recentTicketsWithPhone = DATE_DATA
+                    .filter(t => t.agent === a.name && t.phone && t.phone.trim() !== '')
+                    .sort((a, b) => b.sortDate - a.sortDate)
+                    .slice(0, 3);
             });
 
             const result = Object.values(agents).sort((a, b) => b.score - a.score);
@@ -6889,20 +7403,20 @@
             const cacheKey = JSON.stringify(config);
 
             if (!forceRefresh && PAGINATION.cache.has(cacheKey)) {
-                console.log('📦 Cache HIT for page', page);
+                if (FRONTEND_CONFIG.DEBUG) console.log('📦 Cache HIT for page', page);
                 const cached = PAGINATION.cache.get(cacheKey);
                 updatePaginationState(cached);
                 return cached;
             }
 
             showTableLoadingSkeleton();
-            console.log('🌐 Fetching page', page, 'from server...');
-            console.log('📋 Config:', config); // ← ADD THIS DEBUG LINE
+            if (FRONTEND_CONFIG.DEBUG) console.log('🌐 Fetching page', page, 'from server...');
+            if (FRONTEND_CONFIG.DEBUG) console.log('📋 Config:', config);
 
             return new Promise((resolve, reject) => {
                 google.script.run
                     .withSuccessHandler(response => {
-                        console.log('📥 Response received:', response); // ← ADD THIS DEBUG LINE
+                        if (FRONTEND_CONFIG.DEBUG) console.log('📥 Response received:', response);
 
                         let parsed = response;
                         if (typeof response === 'string') {
@@ -6934,7 +7448,7 @@
                             return;
                         }
 
-                        console.log('✅ Loaded page', page, '-', (parsed.data || []).length, 'tickets');
+                        if (FRONTEND_CONFIG.DEBUG) console.log('✅ Loaded page', page, '-', (parsed.data || []).length, 'tickets');
                         updatePaginationState(parsed);
                         PAGINATION.cache.set(cacheKey, parsed);
 
@@ -6975,18 +7489,6 @@
                 // ✅ Switch to Server Pagination Mode
                 VIEW_STATE.useLocalPagination = false;
 
-                // ✅ Helper: Get date from row (try multiple column names)
-                function getDateFromRow(row) {
-                    const dateKeys = ['Date', 'Timestamp', 'date', 'timestamp', 'Created', 'created'];
-                    for (const key of dateKeys) {
-                        if (row[key]) {
-                            const d = new Date(row[key]);
-                            if (!isNaN(d.getTime())) return d;
-                        }
-                    }
-                    return null;
-                }
-
                 DISPLAY_DATA = (response.data || []).map(row => {
                     const dateObj = getDateFromRow(row) || new Date();
                     const isValidDate = dateObj && !isNaN(dateObj.getTime());
@@ -6996,8 +7498,13 @@
                     const computedAgeDays = row['_ageDays'] !== undefined ? row['_ageDays'] : (isValidDate ? calculateAgeDays(dateObj) : 0);
                     const computedAgeCategory = row['_ageCategory'] || (isValidDate ? getAgeCategory(computedAgeDays) : 'fresh');
 
+                    // ✅ Field mapping: Handle both backend and API response formats
+                    const getSupportType = () => {
+                        return row['Support Type'] || row['supportType'] || 'Customer Support';
+                    };
+
                     return {
-                        id: row['Ticket ID'] || '',
+                        id: row['Ticket ID'] || row['id'] || '',
                         rowIndex: 0,
                         timestamp: dateObj,
                         date: isValidDate ? formatDate(dateObj) : '-',
@@ -7005,20 +7512,20 @@
                         hourIST: isValidDate ? dateObj.getHours() : 0,
                         ageDays: computedAgeDays,
                         ageCategory: computedAgeCategory,
-                        email: row['IT Person Email'] || '',
-                        agent: row['IT Person'] || 'Unassigned',
-                        requestedBy: row['Requested By'] || '-',
-                        mid: row['MID'] || '-',
-                        business: row['Business Name'] || '-',
-                        pos: row['POS System'] || '-',
-                        supportType: row['Support Type'] || 'Customer Support',
-                        concern: row['Concern Related to'] || 'Unspecified',
-                        config: row['System Configuration'] || '',
-                        remark: row['Remark'] || '',
-                        status: row['Status'] || 'Not Completed',
-                        reason: row['Follow-up Reason/ Remark'] || '',
-                        invalidClosed: row['Invalid Closed'] || false,
-                        reasonQuality: row['_reasonQuality'] || calculateReasonQuality(row['Follow-up Reason/ Remark'] || '')
+                        email: row['IT Person Email'] || row['email'] || '',
+                        agent: row['IT Person'] || row['agent'] || 'Unassigned',
+                        requestedBy: row['Requested By'] || row['requestedBy'] || '-',
+                        mid: row['MID'] || row['mid'] || '-',
+                        business: row['Business Name'] || row['business'] || '-',
+                        pos: row['POS System'] || row['pos'] || '-',
+                        supportType: getSupportType(),
+                        concern: row['Concern Related to'] || row['concern'] || 'Unspecified',
+                        config: row['System Configuration'] || row['config'] || '',
+                        remark: row['Remark'] || row['remark'] || '',
+                        status: row['Status'] || row['status'] || 'Not Completed',
+                        reason: row['Follow-up Reason/ Remark'] || row['reason'] || '',
+                        invalidClosed: row['Invalid Closed'] || row['invalidClosed'] || false,
+                        reasonQuality: row['_reasonQuality'] || calculateReasonQuality(row['Follow-up Reason/ Remark'] || row['reason'] || '')
                     };
                 });
 
@@ -7159,15 +7666,11 @@
                 tableWrapper.scrollIntoView({ behavior: 'smooth', block: 'start' });
             }
 
-            setTimeout(() => {
-                if (VIEW_STATE.useLocalPagination) {
-                    // ✅ Handle Local Pagination (for KPI filters)
-                    renderTable(VIEW_STATE.currentTitle || 'Tickets', page);
-                } else {
-                    // ✅ Handle Server Pagination
-                    renderTicketsTablePaginated(page);
-                }
-            }, 200);
+            if (VIEW_STATE.useLocalPagination) {
+                renderTable(VIEW_STATE.currentTitle || 'Tickets', page);
+            } else {
+                renderTicketsTablePaginated(page);
+            }
         }
 
         function changePageSize(newSize) {
@@ -7178,7 +7681,7 @@
         }
 
         const debouncedSearch = debounce(function (searchTerm) {
-            console.log('🔍 Searching for:', searchTerm);
+            if (FRONTEND_CONFIG.DEBUG) console.log('🔍 Searching for:', searchTerm);
             PAGINATION.filters.search = searchTerm;
             PAGINATION.cache.clear();
             renderTicketsTablePaginated(1);
@@ -7270,71 +7773,70 @@
                 const effClass = a.completionRate >= 60 ? 'score-positive' : a.completionRate >= 30 ? 'score-neutral' : 'score-negative';
                 const peerBarColor = rate >= teamAvg ? '#10B981' : rate >= teamAvg - 10 ? '#F59E0B' : '#EF4444';
 
-                return `
-        <div class="agent-card ${topClass}">
-            <div class="crown-badge"><i class="fas fa-crown"></i> TOP AGENT</div>
-            <div class="ac-header">
-                <div class="ac-user">
-                    <span class="ac-medal">${medal}</span>
-                    <span class="ac-name">${a.name}</span>
-                </div>
-                <span class="ac-rate">${rate}% Rate</span>
-            </div>
+                return '<div class="agent-card ' + topClass + '">' +
+                    '<div class="crown-badge"><i class="fas fa-crown"></i> TOP AGENT</div>' +
+                    '<div class="ac-header">' +
+                    '<div class="ac-user">' +
+                    '<span class="ac-medal">' + medal + '</span>' +
+                    '<span class="ac-name">' + a.name + '</span>' +
+                    '</div>' +
+                    '<span class="ac-rate">' + rate + '% Rate</span>' +
+                    '</div>' +
 
-            <div class="ac-stats-row">
-                <div class="stat-btn sb-total" onclick="filterByAgent('${a.name}', 'Total')">
-                    <span class="sb-val">${a.total}</span><span class="sb-lbl">Total</span>
-                </div>
-                <div class="stat-btn sb-done" onclick="filterByAgent('${a.name}', 'Completed')">
-                    <span class="sb-val">${a.comp}</span><span class="sb-lbl">Done</span>
-                </div>
-                <div class="stat-btn sb-pend" onclick="filterByAgent('${a.name}', 'Not Completed')">
-                    <span class="sb-val">${a.not}</span><span class="sb-lbl">Pend</span>
-                </div>
-                <div class="stat-btn sb-closed" onclick="filterByAgent('${a.name}', 'Closed')">
-                    <span class="sb-val">${a.closed}</span><span class="sb-lbl">Close</span>
-                </div>
-                <div class="stat-btn sb-cant" onclick="filterByAgent('${a.name}', 'Can\\'t Do')"> 
-                    <span class="sb-val">${a.cant}</span><span class="sb-lbl">Can't</span>
-                </div>
-            </div>
+                    '<div class="ac-stats-row">' +
+                    '<div class="stat-btn sb-total" onclick="filterByAgent(\'' + a.name + '\', \'Total\')">' +
+                    '<span class="sb-val">' + a.total + '</span><span class="sb-lbl">Total</span>' +
+                    '</div>' +
+                    '<div class="stat-btn sb-done" onclick="filterByAgent(\'' + a.name + '\', \'Completed\')">' +
+                    '<span class="sb-val">' + a.comp + '</span><span class="sb-lbl">Done</span>' +
+                    '</div>' +
+                    '<div class="stat-btn sb-pend" onclick="filterByAgent(\'' + a.name + '\', \'Not Completed\')">' +
+                    '<span class="sb-val">' + a.not + '</span><span class="sb-lbl">Pend</span>' +
+                    '</div>' +
+                    '<div class="stat-btn sb-closed" onclick="filterByAgent(\'' + a.name + '\', \'Closed\')">' +
+                    '<span class="sb-val">' + a.closed + '</span><span class="sb-lbl">Close</span>' +
+                    '</div>' +
+                    '<div class="stat-btn sb-cant" onclick="filterByAgent(\'' + a.name + '\', \'Can\\\'t Do\')">' +
+                    '<span class="sb-val">' + a.cant + '</span><span class="sb-lbl">Can\'t</span>' +
+                    '</div>' +
+                    '</div>' +
 
-            <div class="ac-stats-row" style="margin-top:8px;">
-                <div class="stat-btn sb-invalid" onclick="filterByAgent('${a.name}', 'Invalid Closed')" style="grid-column: span 2;">
-                    <span class="sb-val">${a.invalidClosed}</span><span class="sb-lbl" style="color:#DC2626;">⚠ Invalid</span>
-                </div>
-                <div class="stat-btn sb-pend" onclick="filterByAgent('${a.name}', 'Old Pending')" style="grid-column: span 3;">
-                    <span class="sb-val">${a.pendingOld}</span><span class="sb-lbl">Pending >7d</span>
-                </div>
-            </div>
+                    '<div class="ac-stats-row" style="margin-top:8px;">' +
+                    '<div class="stat-btn sb-invalid" onclick="filterByAgent(\'' + a.name + '\', \'Invalid Closed\')" style="grid-column: span 2;">' +
+                    '<span class="sb-val">' + a.invalidClosed + '</span><span class="sb-lbl" style="color:#DC2626;">⚠ Invalid</span>' +
+                    '</div>' +
+                    '<div class="stat-btn sb-pend" onclick="filterByAgent(\'' + a.name + '\', \'Old Pending\')" style="grid-column: span 3;">' +
+                    '<span class="sb-val">' + a.pendingOld + '</span><span class="sb-lbl">Pending >7d</span>' +
+                    '</div>' +
+                    '</div>' +
 
-            <div class="ac-score-row">
-                <div class="score-box">
-                    <span class="score-val ${scoreClass}">${a.score > 0 ? '+' : ''}${a.score}</span>
-                    <span class="score-lbl">Points</span>
+                    '<div class="ac-score-row">' +
+                    '<div class="score-box">' +
+                    '<span class="score-val ' + scoreClass + '">' + (a.score > 0 ? '+' : '') + a.score + '</span>' +
+                    '<span class="score-lbl">Points</span>' +
+                    '</div>' +
+                    '<div class="score-box">' +
+                    '<span class="score-val ' + effClass + '">' + a.completionRate + '%</span>' +
+                    '<span class="score-lbl">Completion Rate</span>' +
+                    '</div>' +
+                    '<div class="score-box">' +
+                    '<span class="score-val" style="color:var(--warning);">#' + (i + 1) + '</span>' +
+                    '<span class="score-lbl">Rank</span>' +
+                    '</div>' +
+                    '</div>' +
 
-                </div>
-                <div class="score-box">
-                    <span class="score-val ${effClass}">${a.completionRate}%</span>
-                    <span class="score-lbl">Completion Rate</span>
-                </div>
-                <div class="score-box">
-                    <span class="score-val" style="color:var(--warning);">#${i + 1}</span>
-                    <span class="score-lbl">Rank</span>
-                </div>
-            </div>
+                    '<div class="peer-compare">' +
+                    '<div class="peer-label">Performance vs Team</div>' +
+                    '<div class="peer-bar-bg">' +
+                    '<div class="peer-bar-fill" style="width:' + rate + '%; background:' + peerBarColor + ';"></div>' +
+                    '<div class="peer-avg-line" style="left:' + teamAvg + '%;"></div>' +
+                    '</div>' +
+                    '</div>' +
 
-            <div class="peer-compare">
-                <div class="peer-label">Performance vs Team</div>
-                <div class="peer-bar-bg">
-                    <div class="peer-bar-fill" style="width:${rate}%; background:${peerBarColor};"></div>
-                    <div class="peer-avg-line" style="left:${teamAvg}%;"></div>
-                </div>
-            </div>
-        </div>
-        `;
+                    '</div>';
             }).join('');
         }
+
 
         // ==========================================
         // 🎯 TABLE FILTERS
@@ -7351,34 +7853,8 @@
             document.querySelectorAll('.kpi-card').forEach(c => c.classList.remove('active'));
             if (btn) btn.classList.add('active');
 
-            // ✅ ENHANCED: Properly filter DISPLAY_DATA based on KPI card type
-            if (type === 'Total') {
-                DISPLAY_DATA = [...DATE_DATA];
-            } else if (type === 'Completed') {
-                DISPLAY_DATA = DATE_DATA.filter(t => t.status.toLowerCase() === 'completed');
-            } else if (type === 'Not Completed') {
-                DISPLAY_DATA = DATE_DATA.filter(t => {
-                    const s = t.status.toLowerCase();
-                    return s === 'not completed' || s === 'pending' || s === 'in progress';
-                });
-            } else if (type === 'Closed') {
-                // ✅ FIXED: Show ALL closed tickets (includes both valid and invalid closed)
-                DISPLAY_DATA = DATE_DATA.filter(t => t.status.toLowerCase() === 'closed');
-            } else if (type === "Can't Do") {
-                DISPLAY_DATA = DATE_DATA.filter(t => {
-                    const s = t.status.toLowerCase();
-                    return s.includes("can't") || s.includes('cant') || s.includes("can’t");
-                });
-            } else if (type === 'Invalid Closed') {
-                DISPLAY_DATA = DATE_DATA.filter(t => t.invalidClosed);
-            } else if (type === 'Old Pending') {
-                DISPLAY_DATA = DATE_DATA.filter(t => {
-                    const s = t.status.toLowerCase();
-                    return t.ageDays >= 7 && s !== 'completed' && s !== 'closed';
-                });
-            } else {
-                DISPLAY_DATA = [...DATE_DATA];
-            }
+            // ✅ Use centralized filter helper (Fix 5)
+            DISPLAY_DATA = filterByStatus(DATE_DATA, type);
 
             // ✅ Sort descending (recent first)
             DISPLAY_DATA.sort((a, b) => b.sortDate - a.sortDate);
@@ -7415,26 +7891,8 @@
 
             let base = DATE_DATA.filter(t => t.agent === agent);
 
-            if (status === 'Total') DISPLAY_DATA = base;
-            else if (status === 'Completed') DISPLAY_DATA = base.filter(t => t.status.toLowerCase() === 'completed');
-            else if (status === 'Not Completed') DISPLAY_DATA = base.filter(t => {
-                const s = t.status.toLowerCase();
-                return s === 'not completed' || s === 'pending' || s === 'in progress';
-            });
-            else if (status === 'Closed') {
-                // ✅ AGENT VIEW: "Closed" button now shows ALL closed tickets (Valid + Invalid)
-                DISPLAY_DATA = base.filter(t => t.status.toLowerCase() === 'closed');
-            }
-            else if (status === "Can't Do")
-                DISPLAY_DATA = base.filter(t => {
-                    const s = t.status.toLowerCase();
-                    return s.includes("can't") || s.includes('cant') || s.includes("can’t");
-                });
-            else if (status === 'Invalid Closed') DISPLAY_DATA = base.filter(t => t.invalidClosed);
-            else if (status === 'Old Pending') DISPLAY_DATA = base.filter(t => {
-                const s = t.status.toLowerCase();
-                return t.ageDays >= 7 && s !== 'completed' && s !== 'closed';
-            });
+            // ✅ Use centralized filter helper (Fix 5)
+            DISPLAY_DATA = filterByStatus(base, status);
             // ✅ ENHANCED: Sort by date descending (recent first)
             DISPLAY_DATA.sort((a, b) => b.sortDate - a.sortDate);
 
@@ -7467,34 +7925,6 @@
             );
             renderTable('Search Results');
         }
-
-        // ⚡ ADD TO FRONTEND: Validate only when displaying ticket details
-        function validateTicketLazy(ticket) {
-            if (ticket._validated) return ticket; // Already done
-
-            // Only validate if ticket is closed
-            if (ticket.status.toLowerCase() === 'closed') {
-                ticket.invalidClosed = false;
-                ticket.validationReason = '';
-
-                // Rule 1: Minimum 7 days
-                if (ticket.ageDays < 7) {
-                    ticket.invalidClosed = true;
-                    ticket.validationReason = `Only ${ticket.ageDays} days old. Min 7 days required.`;
-                }
-
-                // Rule 2: Requires reason
-                else if (!ticket.reason || ticket.reason.trim().length < 5) {
-                    ticket.invalidClosed = true;
-                    ticket.validationReason = 'Missing closure reason (min 5 chars)';
-                }
-            }
-
-            ticket._validated = true;
-            return ticket;
-        }
-
-
 
         // ==========================================
         // 📋 TABLE RENDERING
@@ -7542,31 +7972,29 @@
             }
 
             const thead = document.getElementById('table-head');
-            thead.innerHTML = `<tr>
-        <th>ID</th>
-        <th>Date</th>
-        <th>Age</th>
-        <th>Agent</th>
-        <th>Business</th>
-        <th>MID</th>
-        <th>Concern</th>
-        <th>Status</th>
-        <th style="min-width: 200px;">Reason / Notes</th>
-        <th>Actions</th>
-    </tr>`;
+            thead.innerHTML = `
+  <tr>
+    <th>ID</th>
+    <th>Date</th>
+    <th>Age</th>
+    <th>Agent</th>
+    <th>Business</th>
+    <th>MID</th>
+    <th style="min-width: 140px">📞 Phone</th>
+    <th>Concern</th>
+    <th>Status</th>
+    <th style="min-width: 200px">Reason / Notes</th>
+    <th>Actions</th>
+  </tr>
+`;
+
 
             // Sort logic is already handled above for Local, or by Server
 
             const tbody = document.getElementById('dash-table');
             tbody.innerHTML = dataToRender.map(t => {
-                t = validateTicketLazy(t); // ⚡ ADD THIS LINE
-                let statusBadge = 's-pend';
-                const st = t.status.toLowerCase();
-                if (st === 'completed') statusBadge = 's-done';
-                else if (st === 'closed') statusBadge = t.invalidClosed ? 's-invalid' : 's-closed';
-                else if (st.includes("can't") || st.includes('cant')) statusBadge = 's-cant';
-
-                if (t.invalidClosed) statusBadge = 's-invalid';
+                // ✅ Use centralized badge helper (Fix 6)
+                const { badgeClass: statusBadge } = getStatusBadge(t);
 
                 // ✅ Safe display helpers to prevent NaN
                 const rqClass = `rq-${t.reasonQuality || 'none'}`;
@@ -7574,37 +8002,47 @@
                 const safeAge = !isNaN(t.ageDays) && t.ageDays !== null ? t.ageDays + 'd' : '-';
 
                 return `
-        <tr class="age-${t.ageCategory || 'fresh'}">
-            <td><strong>${escapeHtml(t.id)}</strong></td>
-            <td>${safeDate}</td>
-            <td><strong>${safeAge}</strong></td>
-            <td>${escapeHtml(t.agent)}</td>
-            <td>${escapeHtml(t.business)}</td>
-            <td>${escapeHtml(t.mid)}</td>
-            <td>${escapeHtml(t.concern)}</td>
-            <td>
-                <span class="badge ${statusBadge}">${escapeHtml(t.status)}</span>
-                ${(t.reason && t.reasonQuality && t.reasonQuality !== 'undefined' && t.reasonQuality !== 'none')
-                        ? `<span class="reason-quality ${rqClass}">${escapeHtml(t.reasonQuality)}</span>`
-                        : ''}
-            </td>
-            <td style="max-width: 350px; font-size: 11px; color: #475569;">
-                ${t.reason
-                        ? `<div style="max-height: 80px; overflow-y: auto; white-space: pre-wrap; line-height: 1.5; padding: 4px 8px; background: #F8FAFC; border-radius: 6px; border-left: 3px solid #CBD5E1;">
-                         ${escapeHtml(t.reason)}
-                       </div>`
-                        : '<span style="color: #CBD5E1; font-style: italic;">—</span>'
+  <tr class="age-${t.ageCategory}">
+    <td><strong>${escapeHtml(t.id)}</strong></td>
+    <td>${safeDate}</td>
+    <td><strong>${safeAge}</strong></td>
+    <td>${escapeHtmlCached(t.agent)}</td>
+    <td>${escapeHtmlCached(t.business)}</td>
+    <td>${escapeHtmlCached(t.mid)}</td>
+    <td>
+      ${t.phone ? `
+        <div class="phone-link-wrapper">
+          <a href="tel:${escapeHtml(t.phone)}" 
+             class="phone-link" 
+             title="Click to call ${escapeHtml(t.phoneDisplay)}">
+            <i class="fas fa-phone"></i>
+            <span>${escapeHtml(t.phoneDisplay)}</span>
+          </a>
+        </div>
+      ` : '<span class="text-muted">—</span>'}
+    </td>
+    <td>${escapeHtml(t.concern)}</td>
+    <td>
+      <span class="badge ${statusBadge}">${escapeHtmlCached(t.status)}</span>
+      ${t.reason && t.reasonQuality && t.reasonQuality !== 'none' ?
+                        `<span class="reason-quality ${rqClass}">${escapeHtmlCached(t.reasonQuality)}</span>` : ''}
+    </td>
+    <td class="reason-cell">
+      ${t.reason ?
+                        `<div class="reason-preview">
+          ${escapeHtml(t.reason)}
+        </div>` :
+                        `<span class="text-muted-italic">—</span>`
                     }
-            </td>
-            <td>
-                <button class="action-btn action-btn-update" 
-                        data-ticket-id="${escapeHtml(t.id)}" 
-                        onclick="openReasonModalSafe(this)">
-                    <i class="fas fa-edit"></i> Update
-                </button>
-            </td>
-        </tr>
-        `;
+    </td>
+    <td>
+      <button class="action-btn action-btn-update" data-ticket-id="${escapeHtml(t.id)}" onclick="openReasonModalSafe(this)">
+        <i class="fas fa-edit"></i> Update
+      </button>
+    </td>
+  </tr>
+`;
+
             }).join('');
 
             // ✅ Also render mobile cards for responsive view
@@ -7641,7 +8079,7 @@
                 <input type="text" 
                        class="mobile-search-input" 
                        placeholder="Search tickets..." 
-                       oninput="searchLocalTable(this.value)"
+                       oninput="debouncedLocalSearch(this.value)"
                        aria-label="Search tickets">
             </div>
         `;
@@ -7669,26 +8107,8 @@
             }
 
             container.innerHTML = dataToRender.map((t, index) => {
-                // Status badge class
-                let statusClass = 'status-pending';
-                let statusIcon = 'fa-hourglass-half';
-                const st = t.status.toLowerCase();
-
-                if (st === 'completed') {
-                    statusClass = 'status-completed';
-                    statusIcon = 'fa-check-circle';
-                } else if (st === 'closed') {
-                    statusClass = t.invalidClosed ? 'status-invalid' : 'status-closed';
-                    statusIcon = t.invalidClosed ? 'fa-exclamation-triangle' : 'fa-lock';
-                } else if (st.includes("can't") || st.includes('cant')) {
-                    statusClass = 'status-cant';
-                    statusIcon = 'fa-times-circle';
-                }
-
-                if (t.invalidClosed) {
-                    statusClass = 'status-invalid';
-                    statusIcon = 'fa-exclamation-triangle';
-                }
+                // ✅ Use centralized badge helper (Fix 6)
+                const { mobileClass: statusClass, iconClass: statusIcon } = getStatusBadge(t);
 
                 // Age category and icon
                 const ageCategory = t.ageCategory || 'fresh';
@@ -7733,7 +8153,14 @@
                         <span>${escapeHtml(t.mid)}</span>
                     </div>
                 </div>
-                
+                ${t.phone ? `
+  <a href="tel:${escapeHtml(t.phone)}" 
+     class="mobile-phone-cta">
+    <i class="fas fa-phone-alt"></i>
+    <span>${escapeHtml(t.phoneDisplay)}</span>
+    <i class="fas fa-arrow-right"></i>
+  </a>
+` : ''}
                 <div class="mobile-ticket-concern">
                     <i class="fas fa-comment-dots"></i>
                     ${escapeHtml(t.concern || 'No concern specified')}
@@ -7778,12 +8205,12 @@
 
             // Add load more button if there are more pages
             if (PAGINATION.currentPage < PAGINATION.totalPages) {
-                container.innerHTML += `
+                container.insertAdjacentHTML('beforeend', `
             <button class="mobile-load-more" onclick="loadMoreMobileTickets()">
                 <i class="fas fa-chevron-down"></i>
                 Load More (${PAGINATION.currentPage}/${PAGINATION.totalPages})
             </button>
-        `;
+        `);
             }
         }
 
@@ -7792,19 +8219,16 @@
             const statsBar = document.getElementById('mobile-stats-bar');
             if (!statsBar || !DATE_DATA) return;
 
-            const stats = {
-                total: DATE_DATA.length,
-                completed: DATE_DATA.filter(t => t.status.toLowerCase() === 'completed').length,
-                pending: DATE_DATA.filter(t => {
-                    const s = t.status.toLowerCase();
-                    return s === 'not completed' || s === 'pending' || s === 'in progress';
-                }).length,
-                closed: DATE_DATA.filter(t => t.status.toLowerCase() === 'closed').length,
-                cant: DATE_DATA.filter(t => {
-                    const s = t.status.toLowerCase();
-                    return s.includes("can't") || s.includes('cant');
-                }).length
-            };
+            // ⚡ Single-pass aggregation (5x fewer iterations)
+            const stats = { total: 0, completed: 0, pending: 0, closed: 0, cant: 0 };
+            DATE_DATA.forEach(t => {
+                stats.total++;
+                const st = t.status.toLowerCase();
+                if (st === 'completed') stats.completed++;
+                else if (st === 'closed') stats.closed++;
+                else if (isCantDoStatus(t.status)) stats.cant++;
+                else stats.pending++;
+            });
 
             statsBar.innerHTML = `
         <div class="mobile-stats-grid">
@@ -7960,7 +8384,7 @@
 
 
         // ✅ ADD this helper function
-        function openReasonModalSafe(input) {
+        function openReasonModalSafeLegacy2(input) {
             let ticketId;
 
             if (typeof input === 'string') {
@@ -7983,51 +8407,95 @@
         // Store cleanup function for focus trap
         let currentModalFocusTrap = null;
         let previousActiveElement = null;
+        let createModalFocusTrap = null;
+        let createModalPreviousActiveElement = null;
+        let comparisonModalFocusTrap = null;
+        let comparisonPreviousActiveElement = null;
+
+
+        // ═══════════════════════════════════════════════════════════════
+        // EXPERT FIX #1: Enhanced Ticket Lookup with Fallback Chain
+        // ═══════════════════════════════════════════════════════════════
+        // 🎯 PROBLEM: "Ticket not found in local data!" error
+        // ✅ SOLUTION: Multi-source search with fallback + better debugging
 
         function openReasonModal(ticketId) {
-            console.log('🎯 openReasonModal called with:', ticketId);
+            console.log('🔍 openReasonModal called with:', ticketId);
 
-            if (!ticketId || ticketId === 'null' || ticketId === 'undefined' || ticketId === '') {
+            // Validation
+            if (!ticketId || ticketId === null || ticketId === undefined || ticketId === '') {
                 showToast('❌ Error: Invalid ticket ID', 'error');
                 announceAlertToScreenReader('Error: Invalid ticket ID');
                 return;
             }
 
-            const ticket = RAW_DATA.find(t => String(t.id).trim() === String(ticketId).trim());
+            // Normalize ticket ID for comparison
+            const normalizedSearchId = String(ticketId).trim().toUpperCase();
+            console.log('🔍 Searching for ticket:', normalizedSearchId);
 
+            // EXPERT FALLBACK CHAIN - Search in multiple data sources
+            let ticket = null;
+            let foundIn = '';
+
+            // Source 1: RAW_DATA (all tickets, unfiltered)
+            if (typeof RAW_DATA !== 'undefined' && RAW_DATA && RAW_DATA.length > 0) {
+                ticket = RAW_DATA.find(t => String(t.id).trim().toUpperCase() === normalizedSearchId);
+                if (ticket) foundIn = 'RAW_DATA';
+            }
+
+            // Source 2: DATE_DATA (date-filtered tickets)
+            if (!ticket && typeof DATE_DATA !== 'undefined' && DATE_DATA && DATE_DATA.length > 0) {
+                ticket = DATE_DATA.find(t => String(t.id).trim().toUpperCase() === normalizedSearchId);
+                if (ticket) foundIn = 'DATE_DATA';
+            }
+
+            // Source 3: DISPLAY_DATA (currently displayed filtered data)
+            if (!ticket && typeof DISPLAY_DATA !== 'undefined' && DISPLAY_DATA && DISPLAY_DATA.length > 0) {
+                ticket = DISPLAY_DATA.find(t => String(t.id).trim().toUpperCase() === normalizedSearchId);
+                if (ticket) foundIn = 'DISPLAY_DATA';
+            }
+
+            // Final check - ticket not found
             if (!ticket) {
-                showToast('❌ Ticket not found in local data!', 'error');
-                announceAlertToScreenReader('Error: Ticket not found');
+                console.error('❌ Ticket NOT FOUND:', normalizedSearchId);
+                console.log('📊 Debug Info:');
+                console.log('  - RAW_DATA available:', typeof RAW_DATA !== 'undefined' && RAW_DATA ? RAW_DATA.length : 0, 'tickets');
+                console.log('  - DATE_DATA available:', typeof DATE_DATA !== 'undefined' && DATE_DATA ? DATE_DATA.length : 0, 'tickets');
+                console.log('  - DISPLAY_DATA available:', typeof DISPLAY_DATA !== 'undefined' && DISPLAY_DATA ? DISPLAY_DATA.length : 0, 'tickets');
+
+                showToast(`Ticket ${ticketId} not found in current data. Refreshing now...`, 'warning', 3000);
+                fetchData();
                 return;
             }
 
-            console.log('✅ Ticket found:', ticket);
+            console.log(`✅ Ticket found in: ${foundIn}`, ticket);
 
             const modal = document.getElementById('reason-modal');
             const modalContent = modal.querySelector('.modal');
 
-            // ♿ Store currently focused element to restore later
+            // Store currently focused element to restore later
             previousActiveElement = document.activeElement;
 
-            // ✅ Store ticket ID in modal
+            // Store ticket ID in modal
             modal.setAttribute('data-current-ticket', ticket.id);
 
-            // ♿ Set ARIA attributes for screen readers
+            // Set ARIA attributes for screen readers
             modal.setAttribute('role', 'dialog');
             modal.setAttribute('aria-modal', 'true');
-            modal.setAttribute('aria-labelledby', 'modal-title');
+            modal.setAttribute('aria-labelledby', 'reason-modal-title');
 
+            // Update modal ticket info
             document.getElementById('modal-ticket-info').innerHTML = `
-        <strong>Ticket ID:</strong> ${escapeHtml(ticket.id)}<br>
-        <strong>Business:</strong> ${escapeHtml(ticket.business)}<br>
-        <strong>Agent:</strong> ${escapeHtml(ticket.agent)}<br>
-        <strong>Current Status:</strong> <span class="badge s-pend">${escapeHtml(ticket.status)}</span>
-    `;
+    <strong>Ticket ID:</strong> ${escapeHtml(ticket.id)}<br>
+    <strong>Business:</strong> ${escapeHtml(ticket.business)}<br>
+    <strong>Agent:</strong> ${escapeHtml(ticket.agent)}<br>
+    <strong>Current Status:</strong> <span class="badge s-pend">${escapeHtml(ticket.status)}</span>
+  `;
 
-            // ✅ Pre-select current status
+            // Pre-select current status
             document.getElementById('modal-status-select').value = ticket.status;
 
-            // ✅ Show existing reason if available
+            // Show existing reason if available
             if (ticket.reason) {
                 document.getElementById('existing-reason-preview').style.display = 'block';
                 document.getElementById('existing-reason-text').innerText = ticket.reason;
@@ -8035,27 +8503,49 @@
                 document.getElementById('existing-reason-preview').style.display = 'none';
             }
 
-            // ✅ Clear reason input
+            // Clear reason input
             document.getElementById('reason-input').value = '';
 
-            // ✅ CRITICAL: Call updateReasonRequirement to show/hide reason field
+            // ⚡ CRITICAL: Call updateReasonRequirement to show/hide reason field
             updateReasonRequirement();
 
-            // ✅ Show modal
+            // Show modal + lock body scroll (S4)
             modal.classList.add('show');
+            document.body.style.overflow = 'hidden';
 
-            // ♿ Enable focus trap
+            // Enable focus trap
             if (modalContent) {
                 currentModalFocusTrap = trapFocus(modalContent);
             }
 
-            // ♿ Announce to screen readers
+            // Announce to screen readers
             announceToScreenReader(`Update ticket dialog opened for ticket ${ticket.id}`);
         }
+
+        // Helper function for openReasonModalSafe - handles both string and button element
+        function openReasonModalSafe(input) {
+            let ticketId;
+
+            if (typeof input === 'string') {
+                // Called from Mobile View - Direct ID
+                ticketId = input;
+            } else if (input && input.getAttribute) {
+                // Called from Desktop Table - Button Element
+                ticketId = input.getAttribute('data-ticket-id');
+            }
+
+            console.log('🔘 Update button clicked for ticket:', ticketId);
+
+            if (ticketId) {
+                openReasonModal(ticketId);
+            }
+        }
+
 
         function closeReasonModal() {
             const modal = document.getElementById('reason-modal');
             modal.classList.remove('show');
+            document.body.style.overflow = '';
             modal.setAttribute('data-current-ticket', '');
 
             // ♿ Remove ARIA attributes
@@ -8112,7 +8602,7 @@
             const ticketId = modal.getAttribute('data-current-ticket');
 
             if (!ticketId || ticketId === 'null') {
-                alert('ERROR: No ticket selected!');
+                showToast('No ticket selected.', 'error', 3000);
                 return;
             }
 
@@ -8121,23 +8611,29 @@
 
             // Validation
             if (!newStatus) {
-                alert('Please select a status');
+                showToast('Please select a status.', 'warning', 3000);
                 return;
             }
 
             if (newStatus !== 'Completed') {
                 if (!newReason || newReason.length < 10) {
-                    alert('Reason is REQUIRED and must be at least 10 characters long.\nCurrent length: ' + newReason.length + ' characters');
+                    showToast('Reason is required (minimum 10 characters).', 'warning', 3500);
                     document.getElementById('reason-input').focus();
                     return;
                 }
+            }
+
+            if (!CSRF_TOKEN) {
+                showToast('Security token missing. Refreshing token, please retry.', 'warning', 3500);
+                fetchCSRFToken();
+                return;
             }
 
             // ✅ STEP 1: OPTIMISTIC UPDATE (Instant!)
             updateTicketOptimistic(ticketId, newStatus, newReason);
 
             // ✅ Show success immediately
-            showToast('✅ Updated successfully', 'success', 2000);
+            showToast(`\u2705 Ticket ${ticketId} updated to ${newStatus}`, 'success', 2000);
             closeReasonModal();
 
             // ✅ STEP 2: Background sync
@@ -8152,6 +8648,9 @@
                             // ❌ Rollback on error
                             console.error('❌ Backend error:', result.error);
                             revertTicketUpdate(ticketId);
+                            if (String(result.error || '').toLowerCase().includes('csrf')) {
+                                fetchCSRFToken();
+                            }
                             showToast('❌ Update failed: ' + result.error, 'error', 4000);
                         }
                     } catch (e) {
@@ -8308,7 +8807,8 @@
 
         function openCreateModal() {
             // Clear all fields first
-
+            createModalPreviousActiveElement = document.activeElement;
+            document.getElementById('new-email').value = '';
             document.getElementById('new-agent').value = '';
             document.getElementById('new-requested').value = '';
             document.getElementById('new-mid').value = '';
@@ -8325,14 +8825,119 @@
             document.getElementById('reason-field-container').style.display = 'none';
 
             // ✅ Show modal first
-            document.getElementById('create-ticket-modal').classList.add('show');
+            const createModal = document.getElementById('create-ticket-modal');
+            createModal.classList.add('show');
+            document.body.style.overflow = 'hidden';
+            const createModalContent = createModal.querySelector('.modal');
+            createModalFocusTrap = trapFocus(createModalContent);
+            announceToScreenReader('Create ticket dialog opened');
 
             // 🔧 Phase 3.3: Dynamically populate agent dropdown
             populateAgentDropdowns();
+
+            // Auto-fetch and fill logged-in user's email AND agent (resilient fallback)
+            requestCurrentUserEmail(function (email, result) {
+                if (email) {
+                    document.getElementById('new-email').value = email;
+                    console.log('✅ Auto-filled email:', email);
+
+                    // 🎯 Auto-select agent with multiple lookup sources
+                    autoSelectAgentByEmail(email, result);
+                } else {
+                    console.warn('⚠️ Could not fetch user email for create ticket modal');
+                }
+            });
+        }
+
+        /**
+         * 🎯 Auto-select IT Person (agent) based on email
+         * Uses multiple lookup sources for robustness
+         */
+        function autoSelectAgentByEmail(email, result) {
+            const agentSelect = document.getElementById('new-agent');
+            if (!agentSelect) return;
+
+            // Try multiple sources for agent name
+            let agentName = (result && result.agentName) ||
+                CURRENT_USER_AGENT_NAME ||
+                null;
+
+            console.log('🔍 Agent lookup:', {
+                fromResult: result?.agentName,
+                fromGlobal: CURRENT_USER_AGENT_NAME,
+                email: email
+            });
+
+            // Wait for dropdown to be populated (increased timeout)
+            setTimeout(() => {
+                // If no agentName from backend, try to find from AGENTS_CACHE
+                if (!agentName) {
+                    agentName = findAgentNameFromEmail(email);
+                    console.log('🔍 Found from AGENTS_CACHE:', agentName);
+                }
+
+                // Last resort: check dropdown options directly
+                if (!agentName) {
+                    agentName = findAgentFromDropdownByEmail(email, agentSelect);
+                    console.log('🔍 Found from dropdown scan:', agentName);
+                }
+
+                if (agentName) {
+                    // Check if the agent exists in dropdown
+                    const optionExists = Array.from(agentSelect.options).some(
+                        opt => opt.value === agentName
+                    );
+
+                    console.log('🎯 Attempting to select:', agentName, 'Exists:', optionExists);
+
+                    if (optionExists) {
+                        agentSelect.value = agentName;
+                        console.log('✅ Auto-selected agent:', agentName);
+                        showToast(`📧 Welcome ${agentName}! Email & Agent auto-filled.`, 'success', 2500);
+                    } else {
+                        console.warn('⚠️ Agent not in dropdown options:', agentName);
+                        console.log('Available options:', Array.from(agentSelect.options).map(o => o.value));
+                    }
+                } else {
+                    console.warn('⚠️ Could not determine agent for email:', email);
+                }
+            }, 600); // Increased wait for dropdown population
+        }
+
+        /**
+         * 🔍 Find agent from dropdown by matching email in AGENTS_CACHE
+         * Last resort fallback
+         */
+        function findAgentFromDropdownByEmail(email, selectElement) {
+            if (!email || !AGENTS_CACHE || !selectElement) return null;
+            const normalized = email.toLowerCase().trim();
+
+            // Find in cache
+            const agent = AGENTS_CACHE.find(a =>
+                a.email && a.email.toLowerCase() === normalized
+            );
+
+            if (agent && agent.name) {
+                // Verify exists in dropdown
+                const exists = Array.from(selectElement.options).some(
+                    opt => opt.value === agent.name
+                );
+                if (exists) return agent.name;
+            }
+            return null;
         }
 
         function closeCreateModal() {
             document.getElementById('create-ticket-modal').classList.remove('show');
+            document.body.style.overflow = '';
+            if (createModalFocusTrap) {
+                createModalFocusTrap();
+                createModalFocusTrap = null;
+            }
+            if (createModalPreviousActiveElement && createModalPreviousActiveElement.focus) {
+                createModalPreviousActiveElement.focus();
+                createModalPreviousActiveElement = null;
+            }
         }
 
 
@@ -8392,24 +8997,24 @@
             const business = document.getElementById('new-business').value;
 
             if (!agent || agent === '-- Select Agent --') {
-                alert('❌ Please select an agent');
+                showToast('Please select an agent.', 'warning', 3000);
                 return;
             }
 
             if (!concern || concern === '-- Select Concern --') {
-                alert('❌ Please select a concern');
+                showToast('Please select a concern.', 'warning', 3000);
                 return;
             }
 
             if (!business || business.trim() === '') {
-                alert('❌ Please enter business name');
+                showToast('Please enter business name.', 'warning', 3000);
                 return;
             }
 
             // ✅ Validate status is selected
             const status = document.getElementById('new-status').value;
             if (!status || status === '') {
-                alert('❌ Please select a status');
+                showToast('Please select a status.', 'warning', 3000);
                 document.getElementById('new-status').focus();
                 return;
             }
@@ -8425,15 +9030,21 @@
                         'Closed': 'Closure Reason',
                         "Can't Do": 'Reason Why Can\'t Do'
                     };
-                    alert(`❌ Please provide ${statusLabels[status] || 'a reason'} (minimum 5 characters)`);
+                    showToast(`Please provide ${statusLabels[status] || 'a reason'} (minimum 5 characters).`, 'warning', 3500);
                     document.getElementById('new-reason').focus();
                     return;
                 }
             }
 
+            if (!CSRF_TOKEN) {
+                showToast('Security token missing. Refreshing token, please retry.', 'warning', 3500);
+                fetchCSRFToken();
+                return;
+            }
+
             // Gather data
             const ticketData = {
-
+                email: document.getElementById('new-email').value || '',
                 agent: agent,
                 requestedBy: document.getElementById('new-requested').value || '-',
                 mid: document.getElementById('new-mid').value || '-',
@@ -8444,7 +9055,8 @@
                 config: document.getElementById('new-config').value || '',
                 remark: document.getElementById('new-remark').value || '',
                 status: document.getElementById('new-status').value || 'Not Completed',
-                reason: document.getElementById('new-reason').value || ''
+                reason: document.getElementById('new-reason').value || '',
+                phone: document.getElementById('new-phone')?.value || '' // ✨ NEW: Phone Capture
             };
 
             // Show loading
@@ -8470,6 +9082,9 @@
                                 fetchData(); // Fallback to full data refresh
                             }
                         } else {
+                            if (String(result.error || '').toLowerCase().includes('csrf')) {
+                                fetchCSRFToken();
+                            }
                             showToast('❌ ' + result.error, 'error', 4000);
                         }
                     } catch (e) {
@@ -8507,7 +9122,7 @@
                 hourIST: now.getHours(),
                 ageDays: 0,
                 ageCategory: 'fresh',
-
+                email: ticketData.email || '',
                 agent: ticketData.agent || 'Unassigned',
                 requestedBy: ticketData.requestedBy || '-',
                 mid: ticketData.mid || '-',
@@ -8937,7 +9552,7 @@
             });
         }
 
-        function renderIssuesChart() {
+        function renderIssuesChartLegacy1() {
             const canvas = document.getElementById('c-issues');
             if (!canvas) return;
 
@@ -8967,7 +9582,7 @@
             });
         }
 
-        function renderAgentsChart() {
+        function renderAgentsChartLegacy1() {
             const canvas = document.getElementById('c-agents');
             if (!canvas) return;
 
@@ -9057,7 +9672,7 @@
         }
 
 
-        function renderWeeklyLoadChart() {
+        function renderWeeklyLoadChartLegacy1() {
             const canvas = document.getElementById('c-weekly-load');
             if (!canvas) return;
 
@@ -9089,7 +9704,7 @@
             });
         }
 
-        function renderCompletionRateChart() {
+        function renderCompletionRateChartLegacy1() {
             const canvas = document.getElementById('c-completion-rate');
             if (!canvas) return;
 
@@ -9119,7 +9734,7 @@
             });
         }
 
-        function renderStatusDistChart() {
+        function renderStatusDistChartLegacy1() {
             const canvas = document.getElementById('c-status-dist');
             if (!canvas) return;
 
@@ -10177,7 +10792,7 @@
         function renderIssuesChart() {
             const ctx = document.getElementById('c-issues');
             if (!ctx || !DATE_DATA || DATE_DATA.length === 0) {
-                if (ctx) ctx.parentElement.innerHTML = '<canvas id="c-issues"></canvas><div style="text-align:center;padding:40px;color:#94A3B8;">No data available</div>';
+                resetChartCanvas('c-issues', 'No data available');
                 return;
             }
 
@@ -10193,25 +10808,21 @@
                 .sort((a, b) => b.count - a.count)
                 .slice(0, 10);
 
-            if (CHARTS['c-issues']) CHARTS['c-issues'].destroy();
 
-            CHARTS['c-issues'] = new Chart(ctx, {
-                type: 'doughnut',
-                data: {
-                    labels: data.map(d => d.concern),
-                    datasets: [{
-                        data: data.map(d => d.count),
-                        backgroundColor: ['#4F46E5', '#7C3AED', '#EC4899', '#EF4444', '#F59E0B', '#10B981', '#06B6D4', '#3B82F6', '#6366F1', '#8B5CF6']
-                    }]
-                },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right' } } }
-            });
+            // ✅ Fix 8: Use smart render/update for smooth transitions
+            renderOrUpdateChart('c-issues', 'doughnut', {
+                labels: data.map(d => d.concern),
+                datasets: [{
+                    data: data.map(d => d.count),
+                    backgroundColor: ['#4F46E5', '#7C3AED', '#EC4899', '#EF4444', '#F59E0B', '#10B981', '#06B6D4', '#3B82F6', '#6366F1', '#8B5CF6']
+                }]
+            }, { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right' } } });
         }
 
         function renderAgentsChart() {
             const ctx = document.getElementById('c-agents');
             if (!ctx || !DATE_DATA || DATE_DATA.length === 0) {
-                if (ctx) ctx.parentElement.innerHTML = '<canvas id="c-agents"></canvas><div style="text-align:center;padding:40px;color:#94A3B8;">No data available</div>';
+                resetChartCanvas('c-agents', 'No data available');
                 return;
             }
 
@@ -10223,22 +10834,18 @@
 
             const data = Object.entries(agentCounts).map(([agent, count]) => ({ agent, count })).sort((a, b) => b.count - a.count);
 
-            if (CHARTS['c-agents']) CHARTS['c-agents'].destroy();
 
-            CHARTS['c-agents'] = new Chart(ctx, {
-                type: 'pie',
-                data: {
-                    labels: data.map(d => d.agent),
-                    datasets: [{ data: data.map(d => d.count), backgroundColor: ['#667eea', '#764ba2', '#10B981', '#F59E0B', '#EF4444'] }]
-                },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right' } } }
-            });
+            // ✅ Fix 8: Use smart render/update for smooth transitions
+            renderOrUpdateChart('c-agents', 'pie', {
+                labels: data.map(d => d.agent),
+                datasets: [{ data: data.map(d => d.count), backgroundColor: ['#667eea', '#764ba2', '#10B981', '#F59E0B', '#EF4444'] }]
+            }, { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right' } } });
         }
 
         function renderWeeklyLoadChart() {
             const ctx = document.getElementById('c-weekly-load');
             if (!ctx || !DATE_DATA || DATE_DATA.length === 0) {
-                if (ctx) ctx.parentElement.innerHTML = '<canvas id="c-weekly-load"></canvas><div style="text-align:center;padding:40px;color:#94A3B8;">No data available</div>';
+                resetChartCanvas('c-weekly-load', 'No data available');
                 return;
             }
 
@@ -10591,7 +11198,7 @@
         }
 
         // NAVIGATION
-        function nav(view, btn) {
+        function navLegacy1(view, btn) {
             VIEW_STATE.currentView = view;
 
             // Hide all views - Include 'history' and 'reports'
@@ -10643,7 +11250,7 @@
         }
 
         // ✅ Refresh button handler for analytics
-        function renderAllAnalytics() {
+        function renderAllAnalyticsLegacy1() {
             console.log('🔄 Refreshing all analytics...');
 
             if (typeof renderAnalytics === 'function') {
@@ -10699,7 +11306,9 @@
                 ticketId: document.getElementById('history-ticket-filter')?.value || '',
                 user: document.getElementById('history-user-filter')?.value || '',
                 action: document.getElementById('history-action-filter')?.value || 'all',
-                severity: document.getElementById('history-severity-filter')?.value || 'all'
+                severity: document.getElementById('history-severity-filter')?.value || 'all',
+                startDate: document.getElementById('history-start-date')?.value || '',
+                endDate: document.getElementById('history-end-date')?.value || ''
             };
 
             // Call backend
@@ -10975,8 +11584,41 @@
         }
 
         function exportHistory() {
-            showToast('Exporting history...', 'info');
-            // Export logic can be added here
+            const filters = {
+                ticketId: document.getElementById('history-ticket-filter')?.value || '',
+                user: document.getElementById('history-user-filter')?.value || '',
+                action: document.getElementById('history-action-filter')?.value || 'all',
+                severity: document.getElementById('history-severity-filter')?.value || 'all',
+                startDate: document.getElementById('history-start-date')?.value || '',
+                endDate: document.getElementById('history-end-date')?.value || ''
+            };
+
+            showToast('Preparing history export...', 'info');
+            google.script.run
+                .withSuccessHandler(response => {
+                    try {
+                        const result = typeof response === 'string' ? JSON.parse(response) : response;
+                        if (!result.success || !result.csv) {
+                            showToast(result.error || 'Unable to export history right now.', 'error');
+                            return;
+                        }
+
+                        const blob = new Blob([result.csv], { type: 'text/csv;charset=utf-8;' });
+                        const link = document.createElement('a');
+                        const url = URL.createObjectURL(blob);
+                        link.href = url;
+                        link.download = result.filename || 'update_history.csv';
+                        link.click();
+                        URL.revokeObjectURL(url);
+                        showToast('Update history exported successfully.', 'success');
+                    } catch (e) {
+                        showToast('Export failed while processing file output.', 'error');
+                    }
+                })
+                .withFailureHandler(() => {
+                    showToast('Unable to export history right now. Please retry.', 'error');
+                })
+                .exportHistoryToCSV({ filters: filters });
         }
 
 
@@ -11013,7 +11655,7 @@
         function renderMobileView() {
             if (window.innerWidth > 1024) return; // Only for mobile
 
-
+            const currentUser = getCurrentUserFromEmail(); // Get logged-in user
 
             // Get user's tickets
             const userTickets = DATE_DATA.filter(t => {
@@ -11093,9 +11735,26 @@
         }
 
         function callCustomer(mid, business) {
-            // Placeholder for phone integration
-            alert(`Calling ${business} (MID: ${mid})\n\nPhone integration coming soon!`);
-            // Future: window.location.href = 'tel:+91XXXXXXXXXX';
+            showToast(`Call feature for ${business} (MID: ${mid}) is not enabled yet.`, 'info', 3500);
+            announceToScreenReader('Call integration is not enabled yet');
+        }
+
+        function getCurrentUserFromEmail() {
+            try {
+                const emailMap = {
+                    'manjeetkashyap.billfree@gmail.com': 'Manjeet',
+                    'suraj.billfree2@gmail.com': 'Suraj',
+                    'veer.billfree@gmail.com': 'Veer Bahadur',
+                    'gaurav.pal@billfree.in': 'Admin'
+                };
+
+                // Use the global variable we fetched on load
+                return emailMap[CURRENT_USER_EMAIL] || 'Admin';
+
+            } catch (e) {
+                console.error('Error in getCurrentUserFromEmail:', e);
+                return 'Admin'; // Default fallback
+            }
         }
 
 
@@ -11320,7 +11979,7 @@
         }
 
         // Print report as PDF
-        function printReportPDF() {
+        function printReportPDFLegacy1() {
             if (!CURRENT_REPORT) {
                 showToast('⚠️ Generate a report first', 'warning', 3000);
                 return;
@@ -11700,77 +12359,84 @@
         // 🧭 NAVIGATION UPDATE
         // ==========================================
         // Override the existing nav function to support new views
-        const originalNav = typeof nav === 'function' ? nav : null;
+        const originalNav = typeof navLegacy1 === 'function' ? navLegacy1 : null;
 
         function nav(view, btn) {
-            // Handle new views
-            if (view === 'history') {
-                // Hide all views
+            const targetBtn = (btn && btn.classList && btn.classList.contains('nav-item'))
+                ? btn
+                : document.querySelector(`.nav-item[data-view="${view}"]`);
+
+            const performNavigation = () => {
+                document.querySelectorAll('.nav-item').forEach(n => {
+                    n.classList.remove('active');
+                    n.removeAttribute('aria-current');
+                });
+                if (targetBtn) {
+                    targetBtn.classList.add('active');
+                    targetBtn.setAttribute('aria-current', 'page');
+                }
+
                 document.querySelectorAll('[id^="view-"]').forEach(v => v.classList.add('hidden'));
-                document.getElementById('view-history').classList.remove('hidden');
+                VIEW_STATE.currentView = view;
 
-                // Update nav
-                document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-                if (btn) btn.classList.add('active');
+                const selectedView = document.getElementById(`view-${view}`);
+                if (selectedView) {
+                    selectedView.classList.remove('hidden');
+                }
 
-                // Load data
-                loadUpdateHistory(1);
-                return;
-            }
+                if (view === 'dash') {
+                    if (window.innerWidth <= 1024) {
+                        renderMobileView();
+                    } else {
+                        renderKPIs();
+                        renderDashboardAgents();
+                        const defaultKpi = document.querySelector('.kpi-card');
+                        if (defaultKpi) filterTable('Total', defaultKpi);
+                    }
+                } else if (view === 'team') {
+                    setTimeout(() => {
+                        const allTimeBtn = document.getElementById('pill-all-time');
+                        renderLeaderboard('all', allTimeBtn);
+                        renderWeeklyGoals();
+                    }, 100);
+                    renderDetailedTeamReport();
+                } else if (view === 'analytics') {
+                    setTimeout(() => {
+                        renderAllAnalytics();
+                    }, 100);
+                } else if (view === 'tickets') {
+                    if (typeof renderMasterTable === 'function') {
+                        renderMasterTable(1);
+                    } else {
+                        renderTicketsTablePaginated(1);
+                    }
+                } else if (view === 'history') {
+                    loadUpdateHistory(1);
+                } else if (view === 'reports') {
+                    const now = new Date();
+                    const monthInput = document.getElementById('report-month');
+                    const yearInput = document.getElementById('report-year');
+                    if (monthInput) monthInput.value = now.getMonth() + 1;
+                    if (yearInput) yearInput.value = now.getFullYear();
+                }
 
-            if (view === 'reports') {
-                // Hide all views
-                document.querySelectorAll('[id^="view-"]').forEach(v => v.classList.add('hidden'));
-                document.getElementById('view-reports').classList.remove('hidden');
+                const viewNames = {
+                    dash: 'dashboard',
+                    team: 'team performance',
+                    analytics: 'manager analytics',
+                    tickets: 'master database',
+                    history: 'update history',
+                    reports: 'monthly reports'
+                };
+                announceViewChange(viewNames[view] || view);
+            };
 
-                // Update nav
-                document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-                if (btn) btn.classList.add('active');
-
-                // Set current month/year
-                const now = new Date();
-                document.getElementById('report-month').value = now.getMonth() + 1;
-                document.getElementById('report-year').value = now.getFullYear();
-                return;
-            }
-
-            // Handle standard views
-            const views = ['dash', 'team', 'analytics', 'tickets'];
-
-            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-            if (btn) btn.classList.add('active');
-
-            // Hide all views including new ones
-            document.querySelectorAll('[id^="view-"]').forEach(v => v.classList.add('hidden'));
-
-            VIEW_STATE.currentView = view;
-
-            if (view === 'dash') {
-                document.getElementById('view-dash').classList.remove('hidden');
-            } else if (view === 'team') {
-                document.getElementById('view-team')?.classList.remove('hidden');
-                // Render leaderboard with default 'all' filter and highlight All Time button
-                setTimeout(() => {
-                    const allTimeBtn = document.getElementById('pill-all-time');
-                    renderLeaderboard('all', allTimeBtn);
-                    renderWeeklyGoals();
-                }, 100);
-                renderDetailedTeamReport();
-            } else if (view === 'analytics') {
-                document.getElementById('view-analytics')?.classList.remove('hidden');
-                // ✅ FIXED: Call correct function and render additional charts
-                setTimeout(() => {
-                    renderAdvancedAnalytics();
-                    renderIssuesChart();
-                    renderAgentsChart();
-                    renderWeeklyLoadChart();
-                    renderCompletionRateChart();
-                    renderStatusDistChart();
-                    renderSkillMixAnalytics();
-                }, 100);
-            } else if (view === 'tickets') {
-                document.getElementById('view-tickets')?.classList.remove('hidden');
-                renderMasterDatabase();
+            if (document.startViewTransition) {
+                document.startViewTransition(() => {
+                    performNavigation();
+                });
+            } else {
+                performNavigation();
             }
         }
 
@@ -11959,6 +12625,7 @@
         function openComparisonModal() {
             const modal = document.getElementById('comparison-modal');
             if (!modal) return;
+            comparisonPreviousActiveElement = document.activeElement;
 
             // Populate agent dropdowns
             const agents = getAgentStats();
@@ -11978,11 +12645,26 @@
             }
 
             modal.classList.add('show');
+            document.body.style.overflow = 'hidden';
+            const comparisonModalContent = modal.querySelector('.modal');
+            comparisonModalFocusTrap = trapFocus(comparisonModalContent);
+            announceToScreenReader('Comparison dialog opened');
         }
 
         function closeComparisonModal() {
             const modal = document.getElementById('comparison-modal');
-            if (modal) modal.classList.remove('show');
+            if (modal) {
+                modal.classList.remove('show');
+                document.body.style.overflow = '';
+            }
+            if (comparisonModalFocusTrap) {
+                comparisonModalFocusTrap();
+                comparisonModalFocusTrap = null;
+            }
+            if (comparisonPreviousActiveElement && comparisonPreviousActiveElement.focus) {
+                comparisonPreviousActiveElement.focus();
+                comparisonPreviousActiveElement = null;
+            }
 
             if (comparisonChart) {
                 comparisonChart.destroy();
@@ -12176,45 +12858,7 @@
             return;
         }
 
-        // ==========================================
-        // 🔄 INTEGRATION: Auto-render when team view loads
-        // ==========================================
 
-        // Add to window load to ensure all functions are available
-        (function initTeamEnhancements() {
-            // Wait for DOM and data to be ready
-            const checkAndRender = function () {
-                if (typeof getAgentStats === 'function') {
-                    setTimeout(updateLeaderboardBadges, 300);
-                }
-            };
-
-            // Hook into existing renderDetailedTeamReport if it exists
-            if (typeof window.renderDetailedTeamReport === 'function') {
-                const _originalRender = window.renderDetailedTeamReport;
-                window.renderDetailedTeamReport = function () {
-                    _originalRender.apply(this, arguments);
-                    setTimeout(checkAndRender, 100);
-                };
-            }
-
-            // Also observe view changes
-            const observer = new MutationObserver(function (mutations) {
-                mutations.forEach(function (mutation) {
-                    if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
-                        const teamView = document.getElementById('view-team');
-                        if (teamView && !teamView.classList.contains('hidden')) {
-                            setTimeout(checkAndRender, 200);
-                        }
-                    }
-                });
-            });
-
-            const teamView = document.getElementById('view-team');
-            if (teamView) {
-                observer.observe(teamView, { attributes: true });
-            }
-        })();
 
 
 

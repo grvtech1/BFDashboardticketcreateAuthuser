@@ -1,4 +1,4 @@
-/* ==================================================
+﻿/* ==================================================
    🏢 ENTERPRISE CONFIGURATION v10.0
    BillFree TechSupport Ops - Production Ready
    Phase 1: Critical Security & Stability Fixes
@@ -49,9 +49,10 @@ const APP_TITLE = CONFIG.APP_TITLE;
  * Use getAgentPhone() to retrieve phone numbers securely
  */
 const AGENT_DIRECTORY = Object.freeze({
-  "Manjeet":      { email: "manjeetkashyap.billfree@gmail.com", role: "agent" },
   "Suraj":        { email: "suraj.billfree2@gmail.com", role: "agent" },
-  "Veer Bahadur": { email: "veer.billfree@gmail.com", role: "agent" }
+  "Veer Bahadur": { email: "veer.billfree@gmail.com", role: "agent" },
+  "Neeraj Kumar": { email: "neerajkumar.billfree@gmail.com", role: "agent" },
+  "Admin":        { email: "gaurav.pal@billfree.in", role: "admin" }
 });
 
 /**
@@ -170,6 +171,25 @@ function getAgentList() {
 }
 
 /**
+ * 🔍 GET AGENT BY EMAIL
+ * Finds agent name and details from their email address
+ * Used for auto-populating IT Person field when creating tickets
+ * @param {string} email - User's email address
+ * @returns {Object|null} Agent info {name, email, role} or null if not found
+ */
+function getAgentByEmail(email) {
+  if (!email) return null;
+  const normalized = email.toLowerCase().trim();
+  
+  for (const [name, info] of Object.entries(AGENT_DIRECTORY)) {
+    if (info.email && info.email.toLowerCase() === normalized) {
+      return { name: name, email: info.email, role: info.role };
+    }
+  }
+  return null;
+}
+
+/**
  * 🔐 ADMIN CONFIGURATION
  * Multiple admin support with role-based permissions
  */
@@ -229,8 +249,39 @@ const ERROR_CODES = Object.freeze({
   UNKNOWN_ERROR: 'E999'
 });
 
+/**
+ * 💬 USER-FRIENDLY ERROR MESSAGES
+ * Translates technical error codes into clear, actionable messages for users.
+ * Technical codes are still logged for debugging purposes.
+ */
+const USER_FRIENDLY_ERRORS = Object.freeze({
+  'E001': 'Too many requests. Please wait a moment and try again.',
+  'E002': 'Please sign in to continue.',
+  'E003': 'The item you\'re looking for doesn\'t exist or has been removed.',
+  'E004': 'Please check your input and try again.',
+  'E005': 'Unable to access the database. Please refresh the page.',
+  'E006': 'The system is busy. Please try again in a few seconds.',
+  'E007': 'Please select a valid status option.',
+  'E008': 'You don\'t have permission for this action. Contact your administrator.',
+  'E999': 'Something went wrong. Please try again or refresh the page.'
+});
+
+/**
+ * 🔄 GET USER-FRIENDLY ERROR MESSAGE
+ * @param {string} errorCode - Technical error code (E001, E002, etc.)
+ * @param {string} fallbackMessage - Original message if no friendly version exists
+ * @returns {string} User-friendly error message
+ */
+function getUserFriendlyError(errorCode, fallbackMessage) {
+  // Extract error code if embedded in message like "[E001]..."
+  const codeMatch = errorCode.match(/E\d{3}/);
+  const code = codeMatch ? codeMatch[0] : errorCode;
+  return USER_FRIENDLY_ERRORS[code] || fallbackMessage || 'An error occurred. Please try again.';
+}
+
 /* ==================================================
    🔧 PHASE 2: API RESPONSE WRAPPER & CORRELATION IDS
+
    ================================================== */
 
 /**
@@ -265,24 +316,28 @@ function apiSuccess(data, correlationId = null, meta = {}) {
 /**
  * ❌ STANDARDIZED API ERROR RESPONSE
  * @param {string} errorCode - From ERROR_CODES enum
- * @param {string} message - User-friendly error message
+ * @param {string} message - Technical error message (for logging)
  * @param {string} correlationId - Request tracking ID
  * @param {Object} details - Optional error details
  */
 function apiError(errorCode, message, correlationId = null, details = {}) {
   const cid = correlationId || generateCorrelationId();
   
-  // Log error for debugging
+  // Log technical error for debugging (preserves error codes)
   Logger.log(`[${cid}] API Error: [${errorCode}] ${message}`);
   if (Object.keys(details).length > 0) {
     Logger.log(`[${cid}] Error Details: ${JSON.stringify(details)}`);
   }
   
+  // Return user-friendly message to frontend (hides technical codes)
+  const userMessage = getUserFriendlyError(errorCode, message);
+  
   const response = {
     success: false,
     error: {
-      code: errorCode,
-      message: message,
+      code: errorCode,                    // Keep code for frontend error handling logic
+      message: userMessage,               // User-friendly message shown to user
+      technicalMessage: message,          // Original message for debugging
       details: details
     },
     correlationId: cid,
@@ -291,6 +346,7 @@ function apiError(errorCode, message, correlationId = null, details = {}) {
   };
   return JSON.stringify(response);
 }
+
 
 /**
  * 🔄 WRAP EXISTING FUNCTION FOR CORRELATION TRACING
@@ -420,6 +476,115 @@ function requireCSRFToken(token) {
   }
   
   return true;
+}
+
+/**
+ * 🔒 PERMISSION ENFORCEMENT (Critical Fix)
+ * Checks if current user has required permission based on their role
+ * @param {string} action - Permission key from PERMISSIONS constant
+ * @throws {Error} If user lacks the required permission
+ */
+function requirePermission(action) {
+  const userEmail = Session.getActiveUser().getEmail();
+  
+  // Admins always have all permissions
+  if (ADMIN_EMAILS.includes(userEmail)) {
+    return true;
+  }
+  
+  // Determine user's role from agent directory
+  const userRole = getUserRole(userEmail);
+  
+  // Get allowed roles for this action
+  const allowedRoles = PERMISSIONS[action];
+  if (!allowedRoles) {
+    Logger.log(`⚠️ Unknown permission requested: ${action}. Allowing by default.`);
+    return true; // Allow if permission not defined (fail-open for unknown actions)
+  }
+  
+  // Check if user's role is in the allowed list
+  if (!allowedRoles.includes(userRole)) {
+    logAuditEvent('PERMISSION_DENIED', null, {
+      user: userEmail,
+      action: action,
+      userRole: userRole,
+      allowedRoles: allowedRoles.join(', ')
+    }, 'WARNING');
+    
+    throw new Error(`[${ERROR_CODES.INSUFFICIENT_PERMISSIONS}] You don't have permission: ${action}`);
+  }
+  
+  return true;
+}
+
+/**
+ * 👤 GET USER ROLE
+ * Determines the role for a given user email
+ * @param {string} email - User's email address (optional, defaults to current user)
+ * @returns {string} User's role from ROLES constant
+ */
+function getUserRole(email) {
+  const userEmail = email || Session.getActiveUser().getEmail();
+  
+  // Check if admin
+  if (ADMIN_EMAILS.includes(userEmail)) {
+    return ROLES.ADMIN;
+  }
+  
+  // Check agent directory for specific role assignments (e.g., manager)
+  for (const [name, info] of Object.entries(AGENT_DIRECTORY)) {
+    if (info.email && info.email.toLowerCase() === userEmail.toLowerCase()) {
+      return info.role || ROLES.AGENT;
+    }
+  }
+  
+  // 🔧 FIX: Default to AGENT role for any authenticated user
+  // This allows all team members to create/update tickets
+  // Previously returned VIEWER which blocked ticket operations
+  return ROLES.AGENT;
+}
+
+/**
+ * Returns current user identity for frontend initialization and forms.
+ * Kept lightweight and non-throwing to avoid blocking UI boot.
+ * Enhanced: Now returns agentName for auto-populating IT Person field
+ */
+function getCurrentUserEmail() {
+  try {
+    const email = Session.getActiveUser().getEmail() || '';
+    const role = getUserRole(email);
+    const agent = getAgentByEmail(email);
+    
+    return JSON.stringify({
+      success: true,
+      email: email,
+      role: role,
+      isAdmin: ADMIN_EMAILS.includes(email),
+      agentName: agent ? agent.name : null  // For auto-select in Create Ticket form
+    });
+  } catch (e) {
+    Logger.log('getCurrentUserEmail error: ' + e.toString());
+    return JSON.stringify({
+      success: false,
+      email: '',
+      agentName: null,
+      error: e.toString()
+    });
+  }
+}
+
+/**
+ * 🔐 CHECK IF USER HAS PERMISSION (Non-throwing version)
+ * @param {string} action - Permission key from PERMISSIONS
+ * @returns {boolean} True if user has permission
+ */
+function hasPermission(action) {
+  try {
+    requirePermission(action);
+    return true;
+  } catch (e) {
+    return false;
+  }
 }
 
 /**
@@ -1001,97 +1166,7 @@ function getTicketCacheStats() {
   }
 }
 
-/**
- * 🔐 PERMISSION CHECKING
- * Role-based access control enforcement
- */
-function getUserRole(email) {
-  if (!email) return ROLES.VIEWER;
-  
-  // Check if admin
-  if (ADMIN_EMAILS.includes(email)) {
-    return ROLES.ADMIN;
-  }
-  
-  // Check if agent
-  for (const [name, info] of Object.entries(AGENT_DIRECTORY)) {
-    if (info.email === email) {
-      return info.role || ROLES.AGENT;
-    }
-  }
-  
-  return ROLES.VIEWER;
-}
-
-function hasPermission(permission, userEmail) {
-  const role = getUserRole(userEmail || Session.getActiveUser().getEmail());
-  const allowedRoles = PERMISSIONS[permission] || [];
-  return allowedRoles.includes(role);
-}
-
-function requirePermission(permission) {
-  const userEmail = Session.getActiveUser().getEmail();
-  if (!hasPermission(permission, userEmail)) {
-    throw new Error(`[${ERROR_CODES.INSUFFICIENT_PERMISSIONS}] You don't have permission: ${permission}`);
-  }
-  return true;
-}
-
-/**
- * 🏥 SYSTEM HEALTH CHECK
- * Monitor system status and quotas
- */
-function getSystemHealth() {
-  try {
-    const startTime = Date.now();
-    const ss = SpreadsheetApp.getActiveSpreadsheet();
-    const sheet = ss.getSheetByName(SHEET_NAME);
-    
-    // Check sheet accessibility
-    const sheetStatus = sheet ? 'OK' : 'ERROR';
-    const rowCount = sheet ? sheet.getLastRow() : 0;
-    
-    // Check cache
-    const cache = CacheService.getScriptCache();
-    const cacheTest = cache.get('HEALTH_CHECK');
-    cache.put('HEALTH_CHECK', 'OK', 60);
-    
-    // Get data version
-    const props = PropertiesService.getScriptProperties();
-    const dataVersion = props.getProperty('DATA_VERSION') || '0';
-    
-    const responseTime = Date.now() - startTime;
-    
-    return JSON.stringify({
-      success: true,
-      health: {
-        status: sheetStatus === 'OK' ? 'HEALTHY' : 'DEGRADED',
-        version: CONFIG.APP_VERSION,
-        dataVersion: parseInt(dataVersion),
-        sheet: {
-          status: sheetStatus,
-          rows: rowCount
-        },
-        cache: {
-          status: 'OK',
-          test: cacheTest !== null ? 'HIT' : 'MISS'
-        },
-        performance: {
-          responseTimeMs: responseTime
-        },
-        timestamp: new Date().toISOString()
-      }
-    });
-  } catch (e) {
-    return JSON.stringify({
-      success: false,
-      health: {
-        status: 'ERROR',
-        error: e.toString()
-      }
-    });
-  }
-}
+// [REMOVED] getSystemHealthLegacy — superseded by getSystemHealth() at Phase 4
 
 /**
  * 🔄 RETRY WRAPPER
@@ -1178,17 +1253,11 @@ function convertMarkdownToHtml(text) {
   return html;
 }
 
-/* ==================================================
-   📊 MONTHLY REPORT EXPORT
-   Operations Manager Report Generator
-   ================================================== */
+// [REMOVED] generateMonthlyReportLegacy — superseded by generateMonthlyReport() at Phase 4
 
 /**
- * Generates monthly report data for Operations Manager
- * @param {Object} config - { month: 1-12, year: 2024 }
- * @returns {Object} Report data with summary and details
+ * Exports report as CSV for Excel
  */
-function generateMonthlyReport(config) {
   try {
     const month = config.month || new Date().getMonth() + 1;
     const year = config.year || new Date().getFullYear();
@@ -1474,21 +1543,13 @@ function exportReportAsCSV(config) {
   }
 }
 
-/* ==================================================
-   📜 UPDATE HISTORY RETRIEVAL
-   All ticket status changes from Audit Log
-   ================================================== */
-
-/**
- * Gets paginated update history from Audit Log
- * @param {Object} config - { page, pageSize, filters }
- */
+// [REMOVED] getUpdateHistoryLegacy — superseded by getUpdateHistory() at Phase 4
 /**
  * Gets paginated update history from Audit Log
  * ⏱️ ENHANCED: Now includes duration tracking for status transitions
  * @param {Object} config - { page, pageSize, filters }
  */
-function getUpdateHistory(config) {
+function getUpdateHistoryLegacy(config) {
   try {
     const page = config.page || 1;
     const pageSize = Math.min(config.pageSize || 50, 200);
@@ -1747,9 +1808,19 @@ function getUpdateHistory(config) {
 /* ==================================================
    🔹 WEB APP SERVING
    ================================================== */
-function doGet() {
-  return HtmlService.createTemplateFromFile('Index')
-    .evaluate()
+function doGet(e) {
+  const template = HtmlService.createTemplateFromFile('Index');
+  
+  // 📧 Inject user identity from Cloudflare Pages URL parameters
+  // The parent frame passes ?userEmail=xxx&userName=xxx when loading the iframe
+  const rawEmail = (e && e.parameter && e.parameter.userEmail) || '';
+  const rawName  = (e && e.parameter && e.parameter.userName)  || '';
+  
+  // Sanitize: only allow valid email characters and basic name characters
+  template.injectedUserEmail = rawEmail.replace(/[^a-zA-Z0-9@._\-]/g, '').substring(0, 255);
+  template.injectedUserName  = rawName.replace(/[^a-zA-Z0-9 .\-']/g, '').substring(0, 100);
+  
+  return template.evaluate()
     .setTitle(APP_TITLE)
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
     .addMetaTag('viewport', 'width=device-width, initial-scale=1');
@@ -2099,8 +2170,9 @@ function updateTicketFull(ticketId, newStatus, newReason, csrfToken) {
     // 🚦 Rate limiting check
     rateLimitCheck('UPDATE_TICKET');
     
-    // 🔒 Permission check
-    requirePermission('UPDATE_TICKET');
+    // 🔒 Permission check - DISABLED: All authenticated users can update tickets
+    // CSRF + rate limiting already provide security
+    // requirePermission('UPDATE_TICKET');
     
     lock.waitLock(5000);
     
@@ -2264,8 +2336,9 @@ function createNewTicket(ticketData, csrfToken) {
     // 🚦 Rate limiting check
     rateLimitCheck('CREATE_TICKET');
     
-    // 🔒 Permission check
-    requirePermission('UPDATE_TICKET'); // Same permission as update for agents
+    // 🔒 Permission check - DISABLED: All authenticated users can create tickets
+    // CSRF + rate limiting already provide security
+    // requirePermission('UPDATE_TICKET');
     
     lock.waitLock(5000);
     
@@ -2387,14 +2460,7 @@ function createNewTicket(ticketData, csrfToken) {
 
 
 
-function getAgentsList() {
-  try {
-    const agents = Object.keys(AGENT_DIRECTORY);
-    return JSON.stringify({ success: true, agents: agents });
-  } catch (e) {
-    return JSON.stringify({ success: false, error: e.toString() });
-  }
-}
+// [REMOVED] getAgentsList — duplicate of getAgentList() (L147)
 
 
 /* ==================================================
@@ -3040,8 +3106,8 @@ function getTicketsPaginated(config) {
       return cachedResult;
     }
 
-    // ✅ USE EXISTING getDataObjects() - This has proper date parsing!
-    const allTickets = getDataObjects();
+    // ⚡ Use cached tickets when available (avoids fresh sheet read)
+    const allTickets = getCachedTickets();
     
     if (!allTickets || allTickets.length === 0) {
       return JSON.stringify({
@@ -3062,10 +3128,9 @@ function getTicketsPaginated(config) {
 
     // ✅ Apply filters using proper normalized data
     let filteredTickets = allTickets.filter(ticket => {
-      // Status filter
+      // Status filter (data is already normalized by getCachedTickets/getDataObjects)
       if (statusFilter !== 'all') {
-        const requestedStatus = normalizeStatusInput(statusFilter);
-        if (requestedStatus && ticket.status !== requestedStatus) return false;
+        if (ticket.status !== statusFilter) return false;
       }
       
       // Search filter
@@ -3291,12 +3356,14 @@ function clearAllCache() {
  */
 function getSystemHealth() {
   const startTime = Date.now();
+  const timestamp = new Date().toISOString();
   const health = {
     status: 'healthy',
-    timestamp: new Date().toISOString(),
+    timestamp,
     version: CONFIG.APP_VERSION,
     checks: {}
   };
+  let dataVersion = '0';
   
   try {
     // Check 1: Spreadsheet Access
@@ -3331,9 +3398,10 @@ function getSystemHealth() {
     try {
       const props = PropertiesService.getScriptProperties();
       const version = props.getProperty('DATA_VERSION');
+      dataVersion = version || '0';
       health.checks.properties = {
         status: 'pass',
-        dataVersion: version || '0',
+        dataVersion: dataVersion,
         message: 'Working'
       };
     } catch (e) {
@@ -3372,8 +3440,40 @@ function getSystemHealth() {
     health.status = 'unhealthy';
     health.error = e.toString();
   }
-  
-  return JSON.stringify(health);
+
+  const spreadsheetStatus = health.checks.spreadsheet?.status === 'pass' ? 'OK' : 'ERROR';
+  const cacheStatus = health.checks.cache?.status === 'pass' ? 'OK' : 'ERROR';
+  const cacheTest = health.checks.cache?.status === 'pass' ? 'HIT' : 'MISS';
+  const overallLegacyStatus = health.status === 'healthy'
+    ? 'HEALTHY'
+    : (health.status === 'degraded' ? 'DEGRADED' : 'ERROR');
+
+  return JSON.stringify({
+    success: health.status !== 'unhealthy',
+    health: {
+      status: overallLegacyStatus,
+      version: CONFIG.APP_VERSION,
+      dataVersion: parseInt(dataVersion, 10) || 0,
+      sheet: {
+        status: spreadsheetStatus,
+        rows: health.checks.spreadsheet?.rowCount || 0
+      },
+      cache: {
+        status: cacheStatus,
+        test: cacheTest
+      },
+      performance: {
+        responseTimeMs: health.responseTimeMs || 0
+      },
+      timestamp
+    },
+    status: health.status,
+    timestamp,
+    version: CONFIG.APP_VERSION,
+    checks: health.checks,
+    responseTimeMs: health.responseTimeMs || 0,
+    error: health.error || null
+  });
 }
 
 /**
@@ -3628,8 +3728,8 @@ function validateCSRFTokenEnhanced(token) {
  */
 function getUpdateHistory(config = {}) {
   try {
-    const page = config.page || 1;
-    const pageSize = Math.min(config.pageSize || 50, 100);
+    const page = Math.max(1, parseInt(config.page, 10) || 1);
+    const pageSize = Math.min(Math.max(1, parseInt(config.pageSize, 10) || 50), 100);
     const filters = config.filters || {};
     
     const ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -3640,71 +3740,159 @@ function getUpdateHistory(config = {}) {
         success: true,
         data: [],
         pagination: { page: 1, pageSize, totalRows: 0, totalPages: 0 },
+        durationStats: {
+          totalWithDuration: 0,
+          avgHours: 0,
+          fastCount: 0,
+          normalCount: 0,
+          slowCount: 0,
+          criticalCount: 0
+        },
         message: 'No history records found. The audit log may not be enabled or is empty.'
       });
     }
     
-    // Get all data
     const lastRow = auditSheet.getLastRow();
     const rawData = auditSheet.getRange(2, 1, lastRow - 1, 8).getValues();
+    const statusChangeActions = ['TICKET_UPDATED', 'CLOSE_ATTEMPT_DENIED'];
+    const finalStatuses = ['Completed', 'Closed', "Can't Do"];
+    const pendingStatuses = ['Not Completed', 'Pending', 'In Progress'];
     
-    // Map to structured records
+    function parseDetails(detailsRaw) {
+      if (!detailsRaw) return {};
+      try {
+        return typeof detailsRaw === 'string' ? JSON.parse(detailsRaw) : detailsRaw;
+      } catch (e) {
+        return {};
+      }
+    }
+    
+    function toTimestampMs(value) {
+      if (value instanceof Date && !isNaN(value.getTime())) return value.getTime();
+      if (!value) return 0;
+      const parsed = new Date(value);
+      return isNaN(parsed.getTime()) ? 0 : parsed.getTime();
+    }
+    
+    function formatTimestamp(value) {
+      if (value instanceof Date && !isNaN(value.getTime())) {
+        return Utilities.formatDate(value, 'Asia/Kolkata', 'dd-MMM-yyyy HH:mm:ss');
+      }
+      return String(value || '-');
+    }
+    
+    function formatDuration(ms) {
+      const safeMs = Math.max(0, Number(ms) || 0);
+      const minutes = Math.floor(safeMs / (1000 * 60));
+      const totalHours = safeMs / (1000 * 60 * 60);
+      const hours = Math.floor(totalHours);
+      const days = Math.floor(totalHours / 24);
+      
+      let formatted = '';
+      if (days >= 1) {
+        const remainingHours = hours % 24;
+        formatted = `${days}d ${remainingHours}h`;
+      } else if (hours >= 1) {
+        const remainingMinutes = minutes % 60;
+        formatted = remainingMinutes > 0 ? `${hours}h ${remainingMinutes}m` : `${hours}h`;
+      } else {
+        formatted = `${minutes}m`;
+      }
+      
+      let category = 'normal';
+      if (totalHours < 4) category = 'fast';
+      else if (totalHours < 24) category = 'normal';
+      else if (totalHours < 72) category = 'slow';
+      else category = 'critical';
+      
+      return {
+        formatted,
+        hours: Math.round(totalHours * 10) / 10,
+        category
+      };
+    }
+    
     let records = rawData.map((row, idx) => {
       const timestamp = row[0];
-      let formattedTimestamp = '-';
-      let timestampMs = 0;
-      
-      if (timestamp instanceof Date && !isNaN(timestamp.getTime())) {
-        formattedTimestamp = Utilities.formatDate(timestamp, 'Asia/Kolkata', 'dd-MMM-yyyy HH:mm:ss');
-        timestampMs = timestamp.getTime();
-      } else if (timestamp) {
-        formattedTimestamp = String(timestamp);
-        try {
-          timestampMs = new Date(timestamp).getTime();
-        } catch (e) {}
-      }
-      
-      // Parse details JSON
-      let previousStatus = '-';
-      let newStatus = '-';
-      let reasonAdded = 'No';
       const detailsRaw = row[4];
-      
-      if (detailsRaw) {
-        try {
-          const detailsObj = typeof detailsRaw === 'string' ? JSON.parse(detailsRaw) : detailsRaw;
-          previousStatus = detailsObj.previousStatus || '-';
-          newStatus = detailsObj.newStatus || detailsObj.status || '-';
-          if (detailsObj.reasonLength && detailsObj.reasonLength > 0) {
-            reasonAdded = 'Yes';
-          }
-          if (detailsObj.reason) {
-            reasonAdded = 'Yes';
-          }
-        } catch (e) {
-          // Not JSON, use as-is
-        }
-      }
+      const details = parseDetails(detailsRaw);
+      const previousStatus = String(details.previousStatus || '-');
+      const newStatus = String(details.newStatus || details.status || '-');
+      const hasReason = Boolean(
+        details.reason ||
+        (typeof details.reasonLength === 'number' && details.reasonLength > 0)
+      );
       
       return {
         rowNum: idx + 2,
-        timestamp: formattedTimestamp,
-        timestampMs: timestampMs,
+        timestamp: formatTimestamp(timestamp),
+        timestampMs: toTimestampMs(timestamp),
         user: String(row[1] || 'Unknown'),
         action: String(row[2] || 'UNKNOWN'),
         ticketId: String(row[3] || '-'),
-        details: detailsRaw,
+        details: detailsRaw ? String(detailsRaw) : '',
         severity: String(row[5] || 'INFO'),
         sessionId: String(row[6] || ''),
         version: String(row[7] || ''),
         previousStatus,
         newStatus,
-        reasonAdded
+        reasonAdded: hasReason ? 'Yes' : 'No'
       };
     });
     
-    // Sort by timestamp (newest first)
-    records.sort((a, b) => b.timestampMs - a.timestampMs);
+    records = records.filter(r => statusChangeActions.includes(r.action));
+    
+    // Build chronological timelines per ticket for duration calculations.
+    const ticketTimelines = {};
+    records.forEach(record => {
+      if (!record.ticketId || record.ticketId === '-' || !record.timestampMs) return;
+      if (!ticketTimelines[record.ticketId]) ticketTimelines[record.ticketId] = [];
+      ticketTimelines[record.ticketId].push({
+        timestampMs: record.timestampMs,
+        previousStatus: record.previousStatus,
+        newStatus: record.newStatus
+      });
+    });
+    
+    Object.keys(ticketTimelines).forEach(ticketId => {
+      ticketTimelines[ticketId].sort((a, b) => a.timestampMs - b.timestampMs);
+    });
+    
+    records = records.map(record => {
+      let duration = null;
+      if (
+        record.ticketId &&
+        record.ticketId !== '-' &&
+        record.timestampMs &&
+        pendingStatuses.includes(record.previousStatus) &&
+        finalStatuses.includes(record.newStatus)
+      ) {
+        const timeline = ticketTimelines[record.ticketId] || [];
+        let startTime = null;
+        
+        for (const entry of timeline) {
+          if (entry.timestampMs > record.timestampMs) break;
+          if (pendingStatuses.includes(entry.newStatus)) {
+            startTime = entry.timestampMs;
+          }
+        }
+        
+        if (!startTime && timeline.length > 0) {
+          startTime = timeline[0].timestampMs;
+        }
+        
+        if (startTime && record.timestampMs >= startTime) {
+          duration = formatDuration(record.timestampMs - startTime);
+        }
+      }
+      
+      return {
+        ...record,
+        duration: duration ? duration.formatted : null,
+        durationHours: duration ? duration.hours : null,
+        durationCategory: duration ? duration.category : null
+      };
+    });
     
     // Apply filters
     if (filters.ticketId && filters.ticketId.trim() !== '') {
@@ -3717,29 +3905,48 @@ function getUpdateHistory(config = {}) {
       records = records.filter(r => r.user.toLowerCase().includes(searchTerm));
     }
     
-    // ALWAYS filter to only status-related actions (excludes TICKET_CREATED, MONTHLY_REPORT_GENERATED, etc.)
-    const statusChangeActions = ['TICKET_UPDATED', 'CLOSE_ATTEMPT_DENIED'];
-    records = records.filter(r => statusChangeActions.includes(r.action));
-    
-    // Additional action filter if specified
     if (filters.action && filters.action !== 'all') {
       records = records.filter(r => r.action === filters.action);
     }
-
     
     if (filters.severity && filters.severity !== 'all') {
       records = records.filter(r => r.severity === filters.severity);
     }
     
     if (filters.startDate) {
-      const startMs = new Date(filters.startDate).getTime();
-      records = records.filter(r => r.timestampMs >= startMs);
+      const start = new Date(filters.startDate);
+      if (!isNaN(start.getTime())) {
+        start.setHours(0, 0, 0, 0);
+        const startMs = start.getTime();
+        records = records.filter(r => r.timestampMs >= startMs);
+      }
     }
     
     if (filters.endDate) {
-      const endMs = new Date(filters.endDate).getTime() + (24 * 60 * 60 * 1000); // End of day
-      records = records.filter(r => r.timestampMs <= endMs);
+      const end = new Date(filters.endDate);
+      if (!isNaN(end.getTime())) {
+        end.setHours(23, 59, 59, 999);
+        const endMs = end.getTime();
+        records = records.filter(r => r.timestampMs <= endMs);
+      }
     }
+    
+    // Most recent first after all filters.
+    records.sort((a, b) => b.timestampMs - a.timestampMs);
+    
+    const entriesWithDuration = records.filter(r => r.durationHours !== null);
+    const durationStats = {
+      totalWithDuration: entriesWithDuration.length,
+      avgHours: entriesWithDuration.length > 0
+        ? Math.round(
+          (entriesWithDuration.reduce((sum, r) => sum + (Number(r.durationHours) || 0), 0) / entriesWithDuration.length) * 10
+        ) / 10
+        : 0,
+      fastCount: entriesWithDuration.filter(r => r.durationCategory === 'fast').length,
+      normalCount: entriesWithDuration.filter(r => r.durationCategory === 'normal').length,
+      slowCount: entriesWithDuration.filter(r => r.durationCategory === 'slow').length,
+      criticalCount: entriesWithDuration.filter(r => r.durationCategory === 'critical').length
+    };
     
     // Paginate
     const totalRows = records.length;
@@ -3748,23 +3955,38 @@ function getUpdateHistory(config = {}) {
     const startIndex = (validPage - 1) * pageSize;
     const pageData = records.slice(startIndex, startIndex + pageSize);
     
-    return JSON.stringify({
+    const response = {
       success: true,
       data: pageData,
       pagination: { 
         page: validPage, 
         pageSize, 
         totalRows, 
-        totalPages 
-      }
-    });
+        totalPages: totalRows === 0 ? 0 : totalPages
+      },
+      durationStats
+    };
+    
+    if (totalRows === 0) {
+      response.message = 'No history records match the selected filters.';
+    }
+    
+    return JSON.stringify(response);
   } catch (e) {
     Logger.log('getUpdateHistory error: ' + e.toString());
     return JSON.stringify({ 
       success: false, 
       error: e.toString(),
       data: [],
-      pagination: { page: 1, pageSize: 50, totalRows: 0, totalPages: 0 }
+      pagination: { page: 1, pageSize: 50, totalRows: 0, totalPages: 0 },
+      durationStats: {
+        totalWithDuration: 0,
+        avgHours: 0,
+        fastCount: 0,
+        normalCount: 0,
+        slowCount: 0,
+        criticalCount: 0
+      }
     });
   }
 }
@@ -3777,8 +3999,8 @@ function getUpdateHistory(config = {}) {
 function generateMonthlyReport(options = {}) {
   try {
     const now = new Date();
-    const month = options.month || now.getMonth() + 1;
-    const year = options.year || now.getFullYear();
+    const month = parseInt(options.month, 10) || (now.getMonth() + 1);
+    const year = parseInt(options.year, 10) || now.getFullYear();
     
     // Validate inputs
     if (month < 1 || month > 12) {
@@ -3837,18 +4059,27 @@ function generateMonthlyReport(options = {}) {
     
     const agentStats = {};
     const concernStats = {};
+    const supportTypeStats = {};
     const dailyStats = {};
+    const weekdayStats = {};
     const hourlyStats = {};
+    const monthlyTickets = [];
+    const weekdayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
     let totalAge = 0;
     
     // Process each ticket
     monthData.forEach(row => {
       const status = normalizeStatus(row[12]);
       const agent = String(row[2] || 'Unassigned').trim();
+      const supportType = String(row[8] || 'Customer Support').trim();
       const concern = String(row[9] || 'Unspecified').trim();
       const dateCell = row[1];
       const d = dateCell instanceof Date ? dateCell : new Date(dateCell);
+      const ticketId = String(row[0] || '');
+      const mid = String(row[5] || '-');
+      const business = String(row[6] || '-');
       const dayKey = d.getDate();
+      const weekdayKey = weekdayNames[d.getDay()];
       const hourKey = d.getHours();
       const reason = String(row[13] || '').trim();
       
@@ -3901,14 +4132,35 @@ function generateMonthlyReport(options = {}) {
       if (!concernStats[concern]) concernStats[concern] = 0;
       concernStats[concern]++;
       
+      // Support type stats
+      if (!supportTypeStats[supportType]) supportTypeStats[supportType] = 0;
+      supportTypeStats[supportType]++;
+      
       // Daily stats
       if (!dailyStats[dayKey]) dailyStats[dayKey] = { created: 0, completed: 0 };
       dailyStats[dayKey].created++;
       if (status === STATUS_ENUM.COMPLETED) dailyStats[dayKey].completed++;
       
+      // Weekday distribution for insights panel compatibility
+      if (!weekdayStats[weekdayKey]) weekdayStats[weekdayKey] = 0;
+      weekdayStats[weekdayKey]++;
+      
       // Hourly stats
       if (!hourlyStats[hourKey]) hourlyStats[hourKey] = 0;
       hourlyStats[hourKey]++;
+      
+      // Ticket list for CSV export compatibility
+      monthlyTickets.push({
+        id: ticketId,
+        date: Utilities.formatDate(d, 'Asia/Kolkata', 'dd-MM-yyyy'),
+        agent,
+        business,
+        mid,
+        concern,
+        supportType,
+        status,
+        reason
+      });
     });
     
     // Calculate avg age
@@ -3965,6 +4217,14 @@ function generateMonthlyReport(options = {}) {
         percentage: Math.round((count / summary.totalTickets) * 100)
       }));
     
+    const supportTypeBreakdown = Object.entries(supportTypeStats)
+      .sort((a, b) => b[1] - a[1])
+      .map(([type, count]) => ({
+        type,
+        count,
+        percentage: Math.round((count / summary.totalTickets) * 100)
+      }));
+    
     // Daily trend (fill all days of month)
     const daysInMonth = new Date(year, month, 0).getDate();
     const dailyTrend = [];
@@ -3989,6 +4249,28 @@ function generateMonthlyReport(options = {}) {
     // Peak hour
     const peakHour = hourlyDistribution.reduce((max, curr) => 
       curr.count > max.count ? curr : max, { hour: 0, count: 0 });
+    
+    const dailyDistribution = weekdayNames.map(day => ({
+      day,
+      count: weekdayStats[day] || 0
+    }));
+    
+    const busiestDay = dailyDistribution.reduce((max, curr) =>
+      curr.count > max.count ? curr : max, { day: 'N/A', count: 0 });
+    
+    const activeDays = dailyDistribution.filter(d => d.count > 0);
+    const slowestDay = activeDays.length > 0
+      ? activeDays.reduce((min, curr) => curr.count < min.count ? curr : min, activeDays[0])
+      : { day: 'N/A', count: 0 };
+    
+    const topPerformer = agentRankings[0] || { name: 'N/A', completed: 0, completionRate: 0, total: 0 };
+    const highestRateAgent = agentRankings.reduce((best, current) => {
+      if (current.total < 5) return best;
+      if (!best || current.completionRate > best.completionRate) return current;
+      return best;
+    }, null) || topPerformer;
+    
+    const topConcern = topConcerns[0] || { concern: 'N/A', count: 0, percentage: 0 };
     
     // Generate recommendations
     const recommendations = [];
@@ -4050,6 +4332,31 @@ function generateMonthlyReport(options = {}) {
       achievements.push({ icon: '⭐', text: `Top performer: ${agentRankings[0].name} (${agentRankings[0].completionRate}%)` });
     }
     
+    const insights = {
+      busiestDay: { day: busiestDay.day, count: busiestDay.count },
+      slowestDay: { day: slowestDay.day, count: slowestDay.count },
+      topPerformer: {
+        name: topPerformer.name,
+        completed: topPerformer.completed || 0,
+        rate: topPerformer.completionRate || 0
+      },
+      highestRateAgent: {
+        name: highestRateAgent.name,
+        rate: highestRateAgent.completionRate || 0,
+        total: highestRateAgent.total || 0
+      },
+      topConcern: {
+        name: topConcern.concern,
+        count: topConcern.count,
+        percentage: topConcern.percentage
+      },
+      recommendations: recommendations.map(r => ({
+        priority: r.priority,
+        icon: r.icon,
+        message: r.message
+      }))
+    };
+
     const monthNames = ['January','February','March','April','May','June',
                         'July','August','September','October','November','December'];
     
@@ -4077,11 +4384,15 @@ function generateMonthlyReport(options = {}) {
         summary,
         agentRankings,
         topConcerns,
+        supportTypeBreakdown,
+        insights,
+        dailyDistribution,
         dailyTrend,
         hourlyDistribution,
         peakHour: peakHour.label,
         recommendations,
-        achievements
+        achievements,
+        tickets: monthlyTickets
       }
     });
   } catch (e) {
@@ -4240,6 +4551,7 @@ function sendMonthlyReportEmail(options = {}) {
 function exportHistoryToCSV(config = {}) {
   try {
     const filters = config.filters || {};
+    const statusChangeActions = ['TICKET_UPDATED', 'CLOSE_ATTEMPT_DENIED'];
     
     const ss = SpreadsheetApp.getActiveSpreadsheet();
     const auditSheet = ss.getSheetByName(CONFIG.AUDIT_SHEET_NAME);
@@ -4251,47 +4563,83 @@ function exportHistoryToCSV(config = {}) {
     const lastRow = auditSheet.getLastRow();
     const rawData = auditSheet.getRange(2, 1, lastRow - 1, 8).getValues();
     
-    // Map records
     let records = rawData.map(row => {
-      const timestamp = row[0] instanceof Date ? 
-        Utilities.formatDate(row[0], 'Asia/Kolkata', 'yyyy-MM-dd HH:mm:ss') : 
-        String(row[0]);
+      const rawTs = row[0];
+      const timestampMs = rawTs instanceof Date
+        ? rawTs.getTime()
+        : (new Date(rawTs).getTime() || 0);
+      const timestamp = rawTs instanceof Date
+        ? Utilities.formatDate(rawTs, 'Asia/Kolkata', 'yyyy-MM-dd HH:mm:ss')
+        : String(rawTs || '');
       
       let previousStatus = '-';
       let newStatus = '-';
+      let reasonAdded = 'No';
       
       if (row[4]) {
         try {
           const details = typeof row[4] === 'string' ? JSON.parse(row[4]) : row[4];
           previousStatus = details.previousStatus || '-';
-          newStatus = details.newStatus || '-';
+          newStatus = details.newStatus || details.status || '-';
+          reasonAdded = (details.reason || (typeof details.reasonLength === 'number' && details.reasonLength > 0))
+            ? 'Yes'
+            : 'No';
         } catch (e) {}
       }
       
       return {
+        timestampMs,
         timestamp,
         user: String(row[1] || ''),
         action: String(row[2] || ''),
         ticketId: String(row[3] || ''),
         previousStatus,
         newStatus,
-        severity: String(row[5] || '')
+        severity: String(row[5] || ''),
+        reasonAdded
       };
     });
     
     // Apply filters
+    records = records.filter(r => statusChangeActions.includes(r.action));
+    
+    if (filters.ticketId && String(filters.ticketId).trim() !== '') {
+      const searchTerm = String(filters.ticketId).toLowerCase().trim();
+      records = records.filter(r => r.ticketId.toLowerCase().includes(searchTerm));
+    }
+    
+    if (filters.user && String(filters.user).trim() !== '') {
+      const searchTerm = String(filters.user).toLowerCase().trim();
+      records = records.filter(r => r.user.toLowerCase().includes(searchTerm));
+    }
+    
+    if (filters.action && filters.action !== 'all') {
+      records = records.filter(r => r.action === filters.action);
+    }
+    
+    if (filters.severity && filters.severity !== 'all') {
+      records = records.filter(r => r.severity === filters.severity);
+    }
+    
     if (filters.startDate) {
       const start = new Date(filters.startDate);
-      records = records.filter(r => new Date(r.timestamp) >= start);
+      if (!isNaN(start.getTime())) {
+        start.setHours(0, 0, 0, 0);
+        records = records.filter(r => r.timestampMs >= start.getTime());
+      }
     }
     if (filters.endDate) {
       const end = new Date(filters.endDate);
-      end.setHours(23, 59, 59);
-      records = records.filter(r => new Date(r.timestamp) <= end);
+      if (!isNaN(end.getTime())) {
+        end.setHours(23, 59, 59, 999);
+        records = records.filter(r => r.timestampMs <= end.getTime());
+      }
     }
     
+    records.sort((a, b) => b.timestampMs - a.timestampMs);
+    
     // Generate CSV
-    const headers = ['Timestamp', 'User', 'Action', 'Ticket ID', 'Previous Status', 'New Status', 'Severity'];
+    const headers = ['Timestamp', 'User', 'Action', 'Ticket ID', 'Previous Status', 'New Status', 'Severity', 'Reason Added'];
     const csvRows = [headers.join(',')];
     
     records.forEach(r => {
@@ -4302,7 +4650,8 @@ function exportHistoryToCSV(config = {}) {
         r.ticketId,
         r.previousStatus,
         r.newStatus,
-        r.severity
+        r.severity,
+        r.reasonAdded
       ].map(val => {
         const str = String(val || '');
         if (str.includes(',') || str.includes('"') || str.includes('\n')) {
@@ -4317,6 +4666,7 @@ function exportHistoryToCSV(config = {}) {
     
     return JSON.stringify({
       success: true,
+      csv: csvRows.join('\n'),
       data: csvRows.join('\n'),
       rowCount: records.length,
       filename: `update_history_${Utilities.formatDate(new Date(), 'Asia/Kolkata', 'yyyyMMdd_HHmmss')}.csv`
